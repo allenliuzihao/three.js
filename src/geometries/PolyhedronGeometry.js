@@ -16,7 +16,7 @@ import { Vector2 } from '../math/Vector2.js';
 function PolyhedronGeometry( vertices, indices, radius, detail ) {
 
 	Geometry.call( this );
-
+	
 	this.type = 'PolyhedronGeometry';
 
 	this.parameters = {

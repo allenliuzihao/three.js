@@ -110,8 +110,8 @@
 
 			function subdivide( geometry, subdivisions ) {
 
-				var modifier = new SubdivisionModifier( subdivisions );
-
+				var modifier = new SubdivisionModifier( subdivisions, "loop");
+				
 				var smoothGeometry = modifier.modify( geometry );
 
 				// colorify faces

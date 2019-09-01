@@ -3,31 +3,39 @@
  *	@author centerionware / http://www.centerionware.com
  *
  *	Subdivision Geometry Modifier
- *		using Loop Subdivision Scheme
+ *		using Catmull-Clark and Loop Subdivision Scheme
  *
  *	References:
- *		http://graphics.stanford.edu/~mdfisher/subdivision.html
- *		http://www.holmes3d.net/graphics/subdivision/
- *		http://www.cs.rutgers.edu/~decarlo/readings/subdiv-sg00c.pdf
+		Loop Subdivision
+ *			http://graphics.stanford.edu/~mdfisher/subdivision.html
+ *			http://www.holmes3d.net/graphics/subdivision/
+ *			http://www.cs.rutgers.edu/~decarlo/readings/subdiv-sg00c.pdf
+ * 		Catmull-Clark Subdivision:
+ * 			http://users.cms.caltech.edu/~cs175/cs175-02/resources/CC.pdf
+ * 			https://en.wikipedia.org/wiki/Catmull%E2%80%93Clark_subdivision_surface
  *
  *	Known Issues:
  *		- currently doesn't handle "Sharp Edges"
  */
 
-import {
-	Face3,
-	Geometry,
-	Vector2,
-	Vector3
-} from "../../../build/three.module.js";
+import { Face3 } from '../../../src/core/Face3.js';
+import { Geometry } from '../../../src/core/Geometry.js';
+import { Vector2 } from '../../../src/math/Vector2.js';
+import { Vector3 } from '../../../src/math/Vector3.js';
 
-var SubdivisionModifier = function ( subdivisions ) {
+
+var SubdivisionModifier = function ( subdivisions, scheme ) {
 
 	this.subdivisions = ( subdivisions === undefined ) ? 1 : subdivisions;
+
+	this.scheme = scheme;
 
 };
 
 // Applies the "modify" pattern
+/**
+ * @param {Geometry} geometry
+ */
 SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	if ( geometry.isBufferGeometry ) {
@@ -116,6 +124,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
+
 	function generateLookups( vertices, faces, metaVertices, edges ) {
 
 		var i, il, face;
@@ -160,7 +169,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	// Performs one iteration of Subdivision
 	SubdivisionModifier.prototype.smooth = function ( geometry ) {
+		if(this.scheme === "loop") {
+			loop (geometry);
+		} else if (this.scheme == "catmull"){
+			// TODO:
+		}
+	};
 
+	/**
+ 	 * @param {Geometry} geometry
+ 	 */
+	function loop (geometry){
 		var tmp = new Vector3();
 
 		var oldVertices, oldFaces, oldUvs;
@@ -401,8 +420,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		if ( hasUvs ) geometry.faceVertexUvs[ 0 ] = newUVs;
 
 		// console.log('done');
-
-	};
+	}
 
 } )();
 
