@@ -1,5 +1,6 @@
 var files = {
 	"webgl": [
+		"catmull_clark_subdivision_scheme",
 		"webgl_animation_cloth",
 		"webgl_animation_keyframes",
 		"webgl_animation_skinning_blending",
