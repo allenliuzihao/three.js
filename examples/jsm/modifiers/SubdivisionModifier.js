@@ -1,6 +1,7 @@
 /**
  *	@author zz85 / http://twitter.com/blurspline / http://www.lab4games.net/zz85/blog
  *	@author centerionware / http://www.centerionware.com
+ *  @author Zihao Liu / catmull-clark subdivision and texture mapping onto the surface
  *
  *	Subdivision Geometry Modifier
  *		using Catmull-Clark and Loop Subdivision Scheme
@@ -67,10 +68,29 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 ( function () {
 
+	/////////////////////////////
+	// Performs one iteration of Subdivision
+	SubdivisionModifier.prototype.smooth = function ( geometry ) {
+		if(this.scheme === "loop") {
+			loop (geometry);
+		} else if (this.scheme == "catmull"){
+			catmull (geometry);
+		}
+	};
+
+	/*  */
+	/**
+ 	 * @param {Geometry} geometry
+ 	 */
+	function catmull (geometry){
+		
+	}
+
+	/* Loop subdivision */
+	
 	// Some constants
 	var ABC = [ 'a', 'b', 'c' ];
-
-
+	
 	function getEdge( a, b, map ) {
 
 		var vertexIndexA = Math.min( a, b );
@@ -81,7 +101,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		return map[ key ];
 
 	}
-
 
 	function processEdge( a, b, vertices, map, face, metaVertices ) {
 
@@ -124,7 +143,10 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
-
+	/**
+	 * @param {Vector3[]} vertices
+	 * @param {Face3[]} faces
+	 */
 	function generateLookups( vertices, faces, metaVertices, edges ) {
 
 		var i, il, face;
@@ -164,17 +186,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		newUvs.push( [ a.clone(), b.clone(), c.clone() ] );
 
 	}
-
-	/////////////////////////////
-
-	// Performs one iteration of Subdivision
-	SubdivisionModifier.prototype.smooth = function ( geometry ) {
-		if(this.scheme === "loop") {
-			loop (geometry);
-		} else if (this.scheme == "catmull"){
-			// TODO:
-		}
-	};
 
 	/**
  	 * @param {Geometry} geometry
