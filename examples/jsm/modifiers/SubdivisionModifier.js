@@ -7,13 +7,13 @@
  *		using Catmull-Clark and Loop Subdivision Scheme
  *
  *	References:
-		Loop Subdivision
+ *  	Catmull-Clark Subdivision:
+ * 			http://users.cms.caltech.edu/~cs175/cs175-02/resources/CC.pdf
+ * 			https://en.wikipedia.org/wiki/Catmull%E2%80%93Clark_subdivision_surface
+ *		Loop Subdivision
  *			http://graphics.stanford.edu/~mdfisher/subdivision.html
  *			http://www.holmes3d.net/graphics/subdivision/
  *			http://www.cs.rutgers.edu/~decarlo/readings/subdiv-sg00c.pdf
- * 		Catmull-Clark Subdivision:
- * 			http://users.cms.caltech.edu/~cs175/cs175-02/resources/CC.pdf
- * 			https://en.wikipedia.org/wiki/Catmull%E2%80%93Clark_subdivision_surface
  *
  *	Known Issues:
  *		- currently doesn't handle "Sharp Edges"
@@ -78,12 +78,85 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		}
 	};
 
-	/*  */
+	/* Catmull-Clark subdivision scheme */
+
+	/**
+	 * generate "vertex1-vertex2" to faces set per edge
+	 * 
+	 * @param {Number} vertexAIdx 
+	 * @param {Number} vertexBIdx 
+	 * @param {Face3} face 
+	 * @param {Map<String, Set<Face3>>} edges 
+	 */
+	function generateEachEdge (vertexAIdx, vertexBIdx, face, edges){
+		let vertexIndexA = Math.min( vertexAIdx, vertexBIdx );
+		let vertexIndexB = Math.max( vertexAIdx, vertexBIdx );
+		let key = vertexIndexA + "_" + vertexIndexB;
+
+		if(!(key in edges)){
+			edges.set(key, new Set(face));
+		} else {
+			edges.get(key).add(face);
+		}
+	}
+
+	/**
+	 * generate "vertex1-vertex2" to faces set per face
+	 * 
+	 * @param {Face3[]} faces 
+	 * @param {Map<String, Set<Face3>>} edges 
+	 */
+	function generateEdges(faces, edges) {
+		let face;
+
+		for (let i = 0, il = faces.length; i < il; i++ ) {
+			face = faces[i];
+			generateEachEdge(face.a, face.b, face, edges);
+			generateEachEdge(face.b, face.c, face, edges);
+			generateEachEdge(face.c, face.a, face, edges);
+		}
+	}
+
+	/**
+	 * calculate face point per face
+	 * 
+	 * @param {Face3[]} faces 
+	 * @param {Vector3[]} vertices 
+	 * @param {Map<Face3, Vector3>} faceToFacePoints 
+	 */
+	function generateFacePoints (faces, vertices, faceToFacePoints){
+		let face, vertexA, vertexB, vertexC;
+
+		for (let index = 0, length = faces.length; index < length; index++) {
+			face = faces[index];
+			vertexA = vertices[face.a];
+			vertexB = vertices[face.b];
+			vertexC = vertices[face.c];
+			faceToFacePoints.set(face, 
+				new Vector3()
+					.addVectors(vertexA, vertexB)
+					.add(vertexC)
+					.multiplyScalar(1/3));
+		}
+	}
+
 	/**
  	 * @param {Geometry} geometry
  	 */
 	function catmull (geometry){
-		
+		let faceToFacePoints = new Map(), edgeToEdgePoints = new Map();
+		let vertices = geometry.vertices, faces = geometry.faces;
+		let edges = new Map();
+
+		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces3}
+		generateEdges(faces, edges);
+
+		// generate vertex -> {faces: [], edges: []}
+
+
+		// calculate the face points for all faces
+		generateFacePoints(faces, vertices, faceToFacePoints);
+
 	}
 
 	/* Loop subdivision */
@@ -200,7 +273,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		var metaVertices, sourceEdges;
 
 		// new stuff.
-		var sourceEdges, newEdgeVertices, newSourceVertices;
+		var newEdgeVertices, newSourceVertices;
 		
 		oldVertices = geometry.vertices; // { x, y, z}
 		oldFaces = geometry.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
