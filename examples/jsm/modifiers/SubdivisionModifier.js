@@ -140,6 +140,11 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		}
 	}
 
+
+	function generateEdgePoints (faces , edgeToEdgePoints) {
+		
+	}
+
 	/**
  	 * @param {Geometry} geometry
  	 */
@@ -153,9 +158,11 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 		// generate vertex -> {faces: [], edges: []}
 
-
 		// calculate the face points for all faces
 		generateFacePoints(faces, vertices, faceToFacePoints);
+
+		// calculate edge points
+		
 
 	}
 
