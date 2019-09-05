@@ -20,6 +20,7 @@
  */
 
 import { Face3 } from '../../../src/core/Face3.js';
+import { Quad } from '../../../src/core/Quad.js';
 import { Geometry } from '../../../src/core/Geometry.js';
 import { Vector2 } from '../../../src/math/Vector2.js';
 import { Vector3 } from '../../../src/math/Vector3.js';
@@ -85,8 +86,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * 
 	 * @param {Number} vertexAIdx 
 	 * @param {Number} vertexBIdx 
-	 * @param {Face3} face 
-	 * @param {Map<String, Set<Face3>>} edges 
+	 * @param {Face3|Quad} face 
+	 * @param {Map<String, Set<Face3|Quad>>} edges 
 	 */
 	function generateEachEdge (vertexAIdx, vertexBIdx, face, edges){
 		let vertexIndexA = Math.min( vertexAIdx, vertexBIdx );
@@ -103,8 +104,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/**
 	 * generate "vertex1-vertex2" to faces set per face
 	 * 
-	 * @param {Face3[]} faces 
-	 * @param {Map<String, Set<Face3>>} edges 
+	 * @param {Face3[]|Quad[]} faces 
+	 * @param {Map<String, Set<Face3|Quad>>} edges 
 	 */
 	function generateEdges(faces, edges) {
 		let face;
@@ -120,29 +121,49 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/**
 	 * calculate face point per face
 	 * 
-	 * @param {Face3[]} faces 
+	 * @param {Face3[]|Quad[]} faces 
 	 * @param {Vector3[]} vertices 
-	 * @param {Map<Face3, Vector3>} faceToFacePoints 
+	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints 
 	 */
 	function generateFacePoints (faces, vertices, faceToFacePoints){
 		let face, vertexA, vertexB, vertexC;
 
 		for (let index = 0, length = faces.length; index < length; index++) {
 			face = faces[index];
-			vertexA = vertices[face.a];
-			vertexB = vertices[face.b];
-			vertexC = vertices[face.c];
-			faceToFacePoints.set(face, 
-				new Vector3()
-					.addVectors(vertexA, vertexB)
-					.add(vertexC)
-					.multiplyScalar(1/3));
+
+			if (face instanceof Face3){
+				vertexA = vertices[face.a];
+				vertexB = vertices[face.b];
+				vertexC = vertices[face.c];
+				faceToFacePoints.set(face, 
+					new Vector3()
+						.addVectors(vertexA, vertexB)
+						.add(vertexC)
+						.multiplyScalar(1/3));
+			} else if (face instanceof Quad){
+				vertexA = vertices[face.a];
+				vertexB = vertices[face.b];
+				vertexC = vertices[face.c];
+				let vertexD = vertices[face.d];
+				faceToFacePoints.set(face, 
+					new Vector3()
+						.addVectors(vertexA, vertexB)
+						.addVectors(vertexC, vertexD)
+						.multiplyScalar(1/4));
+			}
 		}
 	}
 
-
-	function generateEdgePoints (faces , edgeToEdgePoints) {
-		
+	/**
+	 * 
+	 * @param {Vector3[]} vertices 
+	 * @param {Map<String, Set<Face3|Quad>>} edges 
+	 * @param {Map<String, Vector3>} edgeToEdgePoint
+	 */
+	function generateEdgePoints (vertices, edges, edgeToEdgePoints) {
+		for (let [edge, faces] of edges) {
+			
+		}
 	}
 
 	/**
@@ -153,7 +174,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		let vertices = geometry.vertices, faces = geometry.faces;
 		let edges = new Map();
 
-		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces3}
+		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edges);
 
 		// generate vertex -> {faces: [], edges: []}
@@ -162,7 +183,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		generateFacePoints(faces, vertices, faceToFacePoints);
 
 		// calculate edge points
-		
+		generateEdgePoints(vertices, edges, edgeToEdgePoints);
 
 	}
 

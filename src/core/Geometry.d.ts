@@ -79,12 +79,7 @@ export class Geometry extends EventDispatcher {
 	 * The array of faces describe how each vertex in the model is connected with each other.
 	 * To signal an update in this array, Geometry.elementsNeedUpdate needs to be set to true.
 	 */
-	faces: Face3[];
-
-	/**
-	 * Array of quads. Used for subdivision surfaces.
-	 */
-	quads: Quad[];
+	faces: Face3[] | Quad[];
 
 	/**
 	 * Array of face UV layers.

@@ -97,5 +97,4 @@ export class Face3 {
 
 	clone(): this;
 	copy( source: Face3 ): this;
-
 }

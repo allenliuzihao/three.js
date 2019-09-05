@@ -929,16 +929,18 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	},
 
 	toTriangleMesh: function() {
-		if(this.quads === undefined || this.quads.length === 0){
-			console.log( 'THREE.Geometry.toTriangleMesh(): geometry do not have quads', this );
+		if(this.faces === undefined || this.faces.length === 0 || this.faces[0] instanceof Face3 ){
+			console.log( 'THREE.Geometry.toTriangleMesh(): geometry invalid.', this );
 			return;
 		}
 
-		this.faces = [];
+		let faces = [];
 
-		this.quads.forEach(quad => {
-			this.faces.concat(quad.toTriangleFaces());
+		this.faces.forEach(quad => {
+			faces.concat(quad.toTriangleFaces());
 		});
+
+		this.faces = faces;
 	},
 
 	toJSON: function () {
