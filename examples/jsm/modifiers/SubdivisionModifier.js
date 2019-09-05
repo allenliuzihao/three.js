@@ -83,6 +83,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	const EDGE_SPLIT = "_";
 
 	/**
+	 * generate edge key given vertex indices of the edge.
+	 * @param {Number} vertexAIdx 
+	 * @param {Number} vertexBIdx 
+	 */
+	function generateEdgeKey (vertexAIdx, vertexBIdx) {
+		let vertexIndexA = Math.min( vertexAIdx, vertexBIdx );
+		let vertexIndexB = Math.max( vertexAIdx, vertexBIdx );
+		return vertexIndexA + EDGE_SPLIT + vertexIndexB;
+	}
+
+	/**
 	 * generate "vertex1-vertex2" to faces set per edge
 	 * 
 	 * @param {Number} vertexAIdx 
@@ -91,9 +102,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * @param {Map<String, Set<Face3|Quad>>} edges 
 	 */
 	function generateEachEdge (vertexAIdx, vertexBIdx, face, edges){
-		let vertexIndexA = Math.min( vertexAIdx, vertexBIdx );
-		let vertexIndexB = Math.max( vertexAIdx, vertexBIdx );
-		let key = vertexIndexA + EDGE_SPLIT + vertexIndexB;
+		let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 
 		if(!(key in edges)){
 			edges.set(key, new Set(face));
@@ -116,6 +125,80 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			generateEachEdge(face.a, face.b, face, edges);
 			generateEachEdge(face.b, face.c, face, edges);
 			generateEachEdge(face.c, face.a, face, edges);
+		}
+	}
+
+	/**
+	 * add a face information to a vertex.
+	 * @param {Number} vertexIdx 
+	 * @param {Face3|Quad} face 
+	 * @param {Map<Number, Set<Face3|Quad>>} vertexToFaces 
+	 */
+	function addFacePerVertex (vertexIdx, face, vertexToFaces){
+		let faceSet;
+		if(vertexIdx in vertexToFaces){
+			faceSet = vertexToFaces.get(vertexIdx);
+		} else {
+			faceSet = new Set();
+			vertexToFaces.set(vertexIdx, faceSet);
+		}
+		faceSet.add(face);
+	}
+
+	/**
+	 * add edge information to a vertex.
+	 * @param {Number} vertexAIdx 
+	 * @param {Number} vertexBIdx 
+	 * @param {Map<Number, Set<String>>} vertexToEdges
+	 */
+	function addEdgePerVertex (vertexAIdx, vertexBIdx, vertexToEdges){
+		let edgeSet;
+		if(vertexAIdx in vertexToEdges){
+			edgeSet = vertexToEdges.get(vertexAIdx);
+		} else {
+			edgeSet = new Set();
+			vertexToEdges.set(vertexAIdx, edgeSet);
+		}
+		edgeSet.add(generateEdgeKey(vertexAIdx, vertexBIdx));
+
+		if(vertexBIdx in vertexToEdges){
+			edgeSet = vertexToEdges.get(vertexBIdx);
+		} else {
+			edgeSet = new Set();
+			vertexToEdges.set(vertexBIdx, edgeSet);
+		}
+		edgeSet.add(generateEdgeKey(vertexAIdx, vertexBIdx));
+	}
+
+	/**
+	 * generate mapping of vertex -> {set {faces}, set {edges}}
+	 * basically all the incident faces and edges for that vertex 
+	 * 
+	 * @param {Face3[]|Quad[]} faces 
+	 * @param {Map<Number, Set<Face3|Quad>>} vertexToFaces
+	 * @param {Map<Number, Set<String>>} vertexToEdges
+	 */
+	function generateVertexInfo(faces, vertexToFaces, vertexToEdges){
+		for (const face of faces) {
+			if(face instanceof Face3){
+				addFacePerVertex(face.a, vertexToFaces);
+				addFacePerVertex(face.b, vertexToFaces);
+				addFacePerVertex(face.c, vertexToFaces);
+
+				addEdgePerVertex(face.a, face.b, vertexToEdges);
+				addEdgePerVertex(face.b, face.c, vertexToEdges);
+				addEdgePerVertex(face.c, face.a, vertexToEdges);
+			} else if (face instanceof Quad){
+				addFacePerVertex(face.a, vertexToFaces);
+				addFacePerVertex(face.b, vertexToFaces);
+				addFacePerVertex(face.c, vertexToFaces);
+				addFacePerVertex(face.d, vertexToFaces);
+
+				addEdgePerVertex(face.a, face.b, vertexToEdges);
+				addEdgePerVertex(face.b, face.c, vertexToEdges);
+				addEdgePerVertex(face.c, face.d, vertexToEdges);
+				addEdgePerVertex(face.d, face.a, vertexToEdges);
+			}
 		}
 	}
 
@@ -195,14 +278,18 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
  	 * @param {Geometry} geometry
  	 */
 	function catmull (geometry){
-		let faceToFacePoints = new Map(), edgeToEdgePoints = new Map();
 		let vertices = geometry.vertices, faces = geometry.faces;
-		let edges = new Map();
+		let edges = new Map()
+			, faceToFacePoints = new Map()
+			, edgeToEdgePoints = new Map()
+			, vertexToFaces = new Map()
+			, vertexToEdges = new Map();
 
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edges);
 
-		// generate vertex -> {faces: [], edges: []}
+		// generate vertex -> {set {faces} , set {edges}}
+		generateVertexInfo(faces, edges, vertexToFaces, vertexToEdges);
 
 		// calculate the face points for all faces
 		generateFacePoints(faces, vertices, faceToFacePoints);
