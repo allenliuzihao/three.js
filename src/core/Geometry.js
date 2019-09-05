@@ -36,6 +36,7 @@ function Geometry() {
 	this.vertices = [];
 	this.colors = [];
 	this.faces = [];
+	this.quads = [];
 	this.faceVertexUvs = [[]];
 
 	this.morphTargets = [];
@@ -925,6 +926,19 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		if ( newUvs1 ) this.faceVertexUvs[ 0 ] = newUvs1;
 		if ( newUvs2 ) this.faceVertexUvs[ 1 ] = newUvs2;
 
+	},
+
+	toTriangleMesh: function() {
+		if(this.quads === undefined || this.quads.length === 0){
+			console.log( 'THREE.Geometry.toTriangleMesh(): geometry do not have quads', this );
+			return;
+		}
+
+		this.faces = [];
+
+		this.quads.forEach(quad => {
+			this.faces.concat(quad.toTriangleFaces());
+		});
 	},
 
 	toJSON: function () {

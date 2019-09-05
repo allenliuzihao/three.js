@@ -1,6 +1,7 @@
 import { Vector3 } from './../math/Vector3';
 import { Color } from './../math/Color';
 import { Face3, Event } from './Face3';
+import { Quad } from './Quad';
 import { Vector2 } from './../math/Vector2';
 import { Vector4 } from './../math/Vector4';
 import { Box3 } from './../math/Box3';
@@ -79,6 +80,11 @@ export class Geometry extends EventDispatcher {
 	 * To signal an update in this array, Geometry.elementsNeedUpdate needs to be set to true.
 	 */
 	faces: Face3[];
+
+	/**
+	 * Array of quads. Used for subdivision surfaces.
+	 */
+	quads: Quad[];
 
 	/**
 	 * Array of face UV layers.
@@ -233,6 +239,8 @@ export class Geometry extends EventDispatcher {
 	sortFacesByMaterialIndex(): void;
 
 	toJSON(): any;
+
+	toTriangleMesh(): this;
 
 	/**
 	 * Creates a new clone of the Geometry.
