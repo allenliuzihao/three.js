@@ -380,6 +380,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoints, nVertices);
 
 		// generate quads
+		
 	}
 
 	/* Loop subdivision */
