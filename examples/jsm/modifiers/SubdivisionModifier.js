@@ -99,15 +99,15 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * @param {Number} vertexAIdx 
 	 * @param {Number} vertexBIdx 
 	 * @param {Face3|Quad} face 
-	 * @param {Map<String, Set<Face3|Quad>>} edges 
+	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces 
 	 */
-	function generateEachEdge (vertexAIdx, vertexBIdx, face, edges){
+	function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
 		let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 
-		if(!(key in edges)){
-			edges.set(key, new Set(face));
+		if(!(key in edgeToFaces)){
+			edgeToFaces.set(key, new Set(face));
 		} else {
-			edges.get(key).add(face);
+			edgeToFaces.get(key).add(face);
 		}
 	}
 
@@ -115,16 +115,16 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * generate "vertex1-vertex2" to faces set per face
 	 * 
 	 * @param {Face3[]|Quad[]} faces 
-	 * @param {Map<String, Set<Face3|Quad>>} edges 
+	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces 
 	 */
-	function generateEdges(faces, edges) {
+	function generateEdges(faces, edgeToFaces) {
 		let face;
 
 		for (let i = 0, il = faces.length; i < il; i++ ) {
 			face = faces[i];
-			generateEachEdge(face.a, face.b, face, edges);
-			generateEachEdge(face.b, face.c, face, edges);
-			generateEachEdge(face.c, face.a, face, edges);
+			generateEachEdge(face.a, face.b, face, edgeToFaces);
+			generateEachEdge(face.b, face.c, face, edgeToFaces);
+			generateEachEdge(face.c, face.a, face, edgeToFaces);
 		}
 	}
 
@@ -242,22 +242,22 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * for each edge, generate an edge point.
 	 * 
 	 * @param {Vector3[]} vertices 
-	 * @param {Map<String, Set<Face3|Quad>>} edges
+	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces
 	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints
 	 * @param {Map<String, Vector3>} edgeToEdgePoints
 	 */
-	function generateEdgePoints (vertices, edges, faceToFacePoints, edgeToEdgePoints) {
+	function generateEdgePoints (vertices, edgeToFaces, faceToFacePoints, edgeToEdgePoints) {
 		let edgeSplits, facesArray;
 		let vertexA, vertexB, facePointA, facePointB;
 		let edgePoint;
 	
-		for (let [edge, faces] of edges) {
+		for (let [edge, faces] of edgeToFaces) {
 			edgeSplits = edge.split(EDGE_SPLIT);
 			vertexA = vertices[Number(edgeSplits[0])];
 			vertexB = vertices[Number(edgeSplits[1])];
 
 			if(faces.size !== 2){
-				console.error("SubdivisionModifier generateEdgePoints error: each edge should only have two faces.");
+				console.error("SubdivisionModifier generateEdgePoints error: each edge should only have two incident faces.");
 				return;
 			}
 			facesArray = Array.from(faces);
@@ -279,24 +279,25 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
  	 */
 	function catmull (geometry){
 		let vertices = geometry.vertices, faces = geometry.faces;
-		let edges = new Map()
+		let edgeToFaces = new Map()
 			, faceToFacePoints = new Map()
 			, edgeToEdgePoints = new Map()
 			, vertexToFaces = new Map()
 			, vertexToEdges = new Map();
 
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
-		generateEdges(faces, edges);
+		generateEdges(faces, edgeToFaces);
 
 		// generate vertex -> {set {faces} , set {edges}}
-		generateVertexInfo(faces, edges, vertexToFaces, vertexToEdges);
+		generateVertexInfo(faces, edgeToFaces, vertexToFaces, vertexToEdges);
 
 		// calculate the face points for all faces
 		generateFacePoints(faces, vertices, faceToFacePoints);
 
 		// calculate edge points
-		generateEdgePoints(vertices, edges, faceToFacePoints, edgeToEdgePoints);
+		generateEdgePoints(vertices, edgeToFaces, faceToFacePoints, edgeToEdgePoints);
 
+		
 	}
 
 	/* Loop subdivision */
