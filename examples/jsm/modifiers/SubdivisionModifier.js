@@ -73,14 +73,30 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	// Performs one iteration of Subdivision
 	SubdivisionModifier.prototype.smooth = function ( geometry ) {
 		if(this.scheme === "loop") {
-			loop (geometry);
+			Loop_Subdivision (geometry);
 		} else if (this.scheme == "catmull"){
-			catmull (geometry);
+			Catmull_Clark_Subdivision (geometry);
 		}
 	};
 
 	/* Catmull-Clark subdivision scheme */
 	const EDGE_SPLIT = "_";
+
+	/**
+	 * Given an array of vectors, compute its average
+	 * @param {Vector3[]} vectors 
+	 */
+	function avg(vectors){
+		if(vectors.length === 0){
+			return new Vector3();
+		}
+
+		let result = new Vector3();
+		for (const vector of vectors) {
+			result.add(vector);
+		}
+		return result.multiplyScalar(1/vectors.length);
+	}
 
 	/**
 	 * generate edge key given vertex indices of the edge.
@@ -258,8 +274,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 			if(faces.size !== 2){
 				console.error("SubdivisionModifier generateEdgePoints error: each edge should only have two incident faces.");
-				return;
 			}
+
 			facesArray = Array.from(faces);
 			facePointA = faceToFacePoints.get(facesArray[0]);
 			facePointB = faceToFacePoints.get(facesArray[1]);
@@ -275,15 +291,78 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
+	 * 
+	 * @param {Vector3[]} vertices 
+	 * @param {Map<Number, Set<Face3|Quad>>} vertexToFaces 
+	 * @param {Map<Number, Set<String>>} vertexToEdges 
+	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoint
+	 * @param {Vector3[]} nVertices 
+	 */
+	function generateNewVertexPosition (vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices) {
+		if(nVertices.length !== vertices.length){
+			return;
+		}
+
+		let vertex, avgFacePoints, avgEdgeMidPoints, n;
+		let edgeSplits, vertexA, vertexB;
+		let faces, edges, facePoints, edgeMidPoints;
+		for (let index = 0; index < vertices.length; index++) {
+			vertex = vertices[index];
+			faces = vertexToFaces.get(index);
+			edges = vertexToEdges.get(index);
+			facePoints = [];
+			edgeMidPoints = [];
+
+			if(faces.size == 0 || edges.size == 0){
+				console.error("SubdivisionModifier generateNewVertexPosition: faces and edges for vertex should not be empty.", this);
+			}
+
+			for (const face of faces) {
+				if(face in faceToFacePoint){
+					facePoints.push(faceToFacePoint.get(face));
+				} else {
+					console.error("SubdivisionModifier generateNewVertexPosition: face should have a face point.", this);
+				}
+			}
+
+			for (const edge of edges) {
+				edgeSplits = edge.split(EDGE_SPLIT);
+				vertexA = vertices[Number(edgeSplits[0])];
+				vertexB = vertices[Number(edgeSplits[1])];
+				edgeMidPoints.push(new Vector3().addVectors(vertexA, vertexB).multiplyScalar(2.0));
+			}
+
+			if(facePoints.length === 0 || edgeMidPoints.length === 0){
+				console.error("SubdivisionModifier generateNewVertexPosition: number of face points and edge midpoints should not be empty.", this);
+			}
+
+			if(facePoints.length !== edgeMidPoints.length) {
+				console.error("SubdivisionModifier generateNewVertexPosition: number of face points should match the number of edge midpoints", this);
+			}
+
+			n = facePoints.length;
+			avgFacePoints = avg(facePoints);
+			avgEdgeMidPoints = avg(edgeMidPoints);
+			nVertices[index] = 
+				new Vector3()
+				.add(avgFacePoints)
+				.addScaledVector(avgEdgeMidPoints, 2)
+				.addScaledVector(vertex, n - 3)
+				.multiplyScalar(1/n);
+		}
+	}
+
+	/**
  	 * @param {Geometry} geometry
  	 */
-	function catmull (geometry){
+	function Catmull_Clark_Subdivision (geometry){
 		let vertices = geometry.vertices, faces = geometry.faces;
 		let edgeToFaces = new Map()
-			, faceToFacePoints = new Map()
-			, edgeToEdgePoints = new Map()
-			, vertexToFaces = new Map()
-			, vertexToEdges = new Map();
+			,faceToFacePoints = new Map()
+			,edgeToEdgePoints = new Map()
+			,vertexToFaces = new Map()
+			,vertexToEdges = new Map(),
+			nVertices = new Array(vertices.length);
 
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edgeToFaces);
@@ -297,7 +376,10 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		// calculate edge points
 		generateEdgePoints(vertices, edgeToFaces, faceToFacePoints, edgeToEdgePoints);
 
-		
+		// calculate new vertex positions
+		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoints, nVertices);
+
+		// generate quads
 	}
 
 	/* Loop subdivision */
@@ -404,7 +486,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/**
  	 * @param {Geometry} geometry
  	 */
-	function loop (geometry){
+	function Loop_Subdivision (geometry){
 		var tmp = new Vector3();
 
 		var oldVertices, oldFaces, oldUvs;
