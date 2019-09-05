@@ -80,6 +80,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	};
 
 	/* Catmull-Clark subdivision scheme */
+	const EDGE_SPLIT = "_";
 
 	/**
 	 * generate "vertex1-vertex2" to faces set per edge
@@ -92,7 +93,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	function generateEachEdge (vertexAIdx, vertexBIdx, face, edges){
 		let vertexIndexA = Math.min( vertexAIdx, vertexBIdx );
 		let vertexIndexB = Math.max( vertexAIdx, vertexBIdx );
-		let key = vertexIndexA + "_" + vertexIndexB;
+		let key = vertexIndexA + EDGE_SPLIT + vertexIndexB;
 
 		if(!(key in edges)){
 			edges.set(key, new Set(face));
@@ -155,14 +156,38 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
+	 * for each edge, generate an edge point.
 	 * 
 	 * @param {Vector3[]} vertices 
-	 * @param {Map<String, Set<Face3|Quad>>} edges 
-	 * @param {Map<String, Vector3>} edgeToEdgePoint
+	 * @param {Map<String, Set<Face3|Quad>>} edges
+	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints
+	 * @param {Map<String, Vector3>} edgeToEdgePoints
 	 */
-	function generateEdgePoints (vertices, edges, edgeToEdgePoints) {
+	function generateEdgePoints (vertices, edges, faceToFacePoints, edgeToEdgePoints) {
+		let edgeSplits, facesArray;
+		let vertexA, vertexB, facePointA, facePointB;
+		let edgePoint;
+	
 		for (let [edge, faces] of edges) {
+			edgeSplits = edge.split(EDGE_SPLIT);
+			vertexA = vertices[Number(edgeSplits[0])];
+			vertexB = vertices[Number(edgeSplits[1])];
+
+			if(faces.size !== 2){
+				console.error("SubdivisionModifier generateEdgePoints error: each edge should only have two faces.");
+				return;
+			}
+			facesArray = Array.from(faces);
+			facePointA = faceToFacePoints.get(facesArray[0]);
+			facePointB = faceToFacePoints.get(facesArray[1]);
+
+			edgePoint = 
+				new Vector3()
+				.addVectors(vertexA, vertexB)
+				.addVectors(facePointA, facePointB)
+				.multiplyScalar(1/4);
 			
+			edgeToEdgePoints.set(edge, edgePoint);
 		}
 	}
 
@@ -183,7 +208,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		generateFacePoints(faces, vertices, faceToFacePoints);
 
 		// calculate edge points
-		generateEdgePoints(vertices, edges, edgeToEdgePoints);
+		generateEdgePoints(vertices, edges, faceToFacePoints, edgeToEdgePoints);
 
 	}
 
