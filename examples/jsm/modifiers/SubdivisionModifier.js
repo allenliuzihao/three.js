@@ -60,6 +60,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
+	// TODO: convert face from quads to triangles for the catmull scheme
+
 	geometry.computeFaceNormals();
 	geometry.computeVertexNormals();
 
@@ -353,16 +355,36 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
+	 * generate smoothed mesh based on new sets of data points.
+	 * 
+	 * @param {Vector3[]} nVertices 
+	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints 
+	 * @param {Map<String, Vector3>} edgeToEdgePoints
+	 * @returns object containing vertices and quads of smoothed mesh
+	 */
+	function generateSmoothedMesh (nVertices, faceToFacePoints, edgeToEdgePoints) {
+		
+		return { "vertices": [], "quads": [] };
+	}
+
+	/**
  	 * @param {Geometry} geometry
  	 */
 	function Catmull_Clark_Subdivision (geometry){
+		if(geometry === undefined || geometry.vertices === undefined
+			|| geometry.faces == undefined || geometry.vertices.length === 0
+			|| geometry.faces.length === 0){
+				console.error("subdivision input geometry is not valid.", geometry);
+				return;
+			}
+
 		let vertices = geometry.vertices, faces = geometry.faces;
 		let edgeToFaces = new Map()
 			,faceToFacePoints = new Map()
 			,edgeToEdgePoints = new Map()
 			,vertexToFaces = new Map()
-			,vertexToEdges = new Map(),
-			nVertices = new Array(vertices.length);
+			,vertexToEdges = new Map()
+			,nVertices = new Array(vertices.length);
 
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edgeToFaces);
@@ -379,8 +401,15 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		// calculate new vertex positions
 		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoints, nVertices);
 
-		// generate quads
-		
+		// generate smoothed mesh
+		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoints, edgeToEdgePoints);
+
+		// set the new geometry
+		geometry.vertices = smoothed["vertices"];
+		geometry.faces = smoothed["quads"];
+
+		// TODO: vertex color and uv interpolation
+
 	}
 
 	/* Loop subdivision */
