@@ -25,6 +25,8 @@ import { Geometry } from '../../../src/core/Geometry.js';
 import { Vector2 } from '../../../src/math/Vector2.js';
 import { Vector3 } from '../../../src/math/Vector3.js';
 
+const CATMULL_CLARK_SCHEME = "catmull_clark";
+const LOOP_SCHEME = "loop";
 
 var SubdivisionModifier = function ( subdivisions, scheme ) {
 
@@ -60,7 +62,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
-	// TODO: convert face from quads to triangles for the catmull scheme
+	if(this.scheme === CATMULL_CLARK_SCHEME){
+		geometry.toTriangleMesh();
+	}
 
 	geometry.computeFaceNormals();
 	geometry.computeVertexNormals();
@@ -74,9 +78,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/////////////////////////////
 	// Performs one iteration of Subdivision
 	SubdivisionModifier.prototype.smooth = function ( geometry ) {
-		if(this.scheme === "loop") {
+		if(this.scheme === LOOP_SCHEME) {
 			Loop_Subdivision (geometry);
-		} else if (this.scheme == "catmull"){
+		} else if (this.scheme === CATMULL_CLARK_SCHEME){
 			Catmull_Clark_Subdivision (geometry);
 		}
 	};
@@ -380,19 +384,28 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 						edgePointIndex + vertices.length + faceToFacePoint.size, 
 						face.b, 
 						edgePointIndex+ 1 + vertices.length + faceToFacePoint.size, 
-						facePointIndex + vertices.length));
+						facePointIndex + vertices.length,
+						undefined,
+						undefined,
+						face.materialIndex));
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
 						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
 						face.c, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						undefined,
+						undefined,
+						face.materialIndex));
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
 						edgePointIndex + vertices.length + faceToFacePoint.size, 
 						face.a, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						undefined,
+						undefined,
+						face.materialIndex));
 
 				facePointIndex++;
 				edgePointIndex += 3;
@@ -408,25 +421,37 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 						face.a,
 						edgePointIndex + vertices.length + faceToFacePoint.size,
 						facePointIndex + vertices.length, 
-						edgePointIndex+ 3 + vertices.length + faceToFacePoint.size));
+						edgePointIndex+ 3 + vertices.length + faceToFacePoint.size,
+						undefined,
+						undefined,
+						face.materialIndex));
 				quads.push(
 					new Quad(
 						edgePointIndex + vertices.length + faceToFacePoint.size,
 						face.b, 
 						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
-						facePointIndex + vertices.length));
+						facePointIndex + vertices.length,
+						undefined,
+						undefined,
+						face.materialIndex));
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
 						edgePointIndex + 1 + vertices.length + faceToFacePoint.size, 
 						face.c, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						undefined,
+						undefined,
+						face.materialIndex));
 				quads.push(
 					new Quad(
 						edgePointIndex + 3 + vertices.length + faceToFacePoint.size,
 						facePointIndex + vertices.length, 
 						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
-						face.d));
+						face.d,
+						undefined,
+						undefined,
+						face.materialIndex));
 
 				facePointIndex++;
 				edgePointIndex += 4;
@@ -478,7 +503,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		geometry.faces = smoothed["quads"];
 
 		// TODO: vertex color and uv interpolation
-
+		
 	}
 
 	/* Loop subdivision */
