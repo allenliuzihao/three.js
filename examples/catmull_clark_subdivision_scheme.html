@@ -40,7 +40,7 @@
 			var faceIndices = [ 'a', 'b', 'c' ];
 
 			var params = {
-				subdivisions: 2
+				subdivisions: 0
 			};
 
 			init();
@@ -110,7 +110,7 @@
 
 			function subdivide( geometry, subdivisions ) {
 
-				var modifier = new SubdivisionModifier( subdivisions, "loop");
+				var modifier = new SubdivisionModifier( subdivisions, SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME);
 				
 				var smoothGeometry = modifier.modify( geometry );
 

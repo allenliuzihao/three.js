@@ -11262,7 +11262,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		}
 
-		for ( var i = 0, il = this.faces.length; i < il; i ++ ) {
+		for ( i = 0, il = this.faces.length; i < il; i ++ ) {
 
 			var face = this.faces[ i ];
 			face.normal.applyMatrix3( normalMatrix ).normalize();
@@ -11436,7 +11436,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		if ( groups.length > 0 ) {
 
-			for ( var i = 0; i < groups.length; i ++ ) {
+			for ( i = 0; i < groups.length; i ++ ) {
 
 				var group = groups[ i ];
 
@@ -11463,7 +11463,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			if ( indices !== undefined ) {
 
-				for ( var i = 0; i < indices.length; i += 3 ) {
+				for ( i = 0; i < indices.length; i += 3 ) {
 
 					addFace( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
 
@@ -11471,7 +11471,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			} else {
 
-				for ( var i = 0; i < positions.length / 3; i += 3 ) {
+				for ( i = 0; i < positions.length / 3; i += 3 ) {
 
 					addFace( i, i + 1, i + 2 );
 
@@ -11771,8 +11771,6 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			// store morph normals
 
-			var faceNormal, vertexNormals;
-
 			for ( f = 0, fl = this.faces.length; f < fl; f ++ ) {
 
 				face = this.faces[ f ];
@@ -11869,7 +11867,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		// colors
 
-		for ( var i = 0, il = colors2.length; i < il; i ++ ) {
+		for ( i = 0, il = colors2.length; i < il; i ++ ) {
 
 			colors1.push( colors2[ i ].clone() );
 
@@ -11908,7 +11906,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			faceCopy.color.copy( face.color );
 
-			for ( var j = 0, jl = faceVertexColors.length; j < jl; j ++ ) {
+			for ( j = 0, jl = faceVertexColors.length; j < jl; j ++ ) {
 
 				color = faceVertexColors[ j ];
 				faceCopy.vertexColors.push( color.clone() );
@@ -11923,13 +11921,13 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		// uvs
 
-		for ( var i = 0, il = geometry.faceVertexUvs.length; i < il; i ++ ) {
+		for ( i = 0, il = geometry.faceVertexUvs.length; i < il; i ++ ) {
 
 			var faceVertexUvs2 = geometry.faceVertexUvs[ i ];
 
 			if ( this.faceVertexUvs[ i ] === undefined ) this.faceVertexUvs[ i ] = [];
 
-			for ( var j = 0, jl = faceVertexUvs2.length; j < jl; j ++ ) {
+			for ( j = 0, jl = faceVertexUvs2.length; j < jl; j ++ ) {
 
 				var uvs2 = faceVertexUvs2[ j ], uvsCopy = [];
 
@@ -12099,7 +12097,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		if ( uvs1 && uvs1.length === length ) newUvs1 = [];
 		if ( uvs2 && uvs2.length === length ) newUvs2 = [];
 
-		for ( var i = 0; i < length; i ++ ) {
+		for ( i = 0; i < length; i ++ ) {
 
 			var id = faces[ i ]._id;
 
@@ -12111,6 +12109,21 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		if ( newUvs1 ) this.faceVertexUvs[ 0 ] = newUvs1;
 		if ( newUvs2 ) this.faceVertexUvs[ 1 ] = newUvs2;
 
+	},
+
+	toTriangleMesh: function() {
+		if(this.faces === undefined || this.faces.length === 0 || this.faces[0] instanceof Face3 ){
+			console.log( 'THREE.Geometry.toTriangleMesh(): geometry should be quad faces to convert to triangle faces.', this );
+			return;
+		}
+
+		let faces = [];
+
+		this.faces.forEach(quad => {
+			faces.concat(quad.toTriangleFaces());
+		});
+
+		this.faces = faces;
 	},
 
 	toJSON: function () {
@@ -12160,7 +12173,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		var uvs = [];
 		var uvsHash = {};
 
-		for ( var i = 0; i < this.faces.length; i ++ ) {
+		for ( i = 0; i < this.faces.length; i ++ ) {
 
 			var face = this.faces[ i ];
 

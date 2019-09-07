@@ -25,9 +25,6 @@ import { Geometry } from '../../../src/core/Geometry.js';
 import { Vector2 } from '../../../src/math/Vector2.js';
 import { Vector3 } from '../../../src/math/Vector3.js';
 
-const CATMULL_CLARK_SCHEME = "catmull_clark";
-const LOOP_SCHEME = "loop";
-
 var SubdivisionModifier = function ( subdivisions, scheme ) {
 
 	this.subdivisions = ( subdivisions === undefined ) ? 1 : subdivisions;
@@ -35,6 +32,13 @@ var SubdivisionModifier = function ( subdivisions, scheme ) {
 	this.scheme = scheme;
 
 };
+
+/**
+ * constants definition
+ */
+SubdivisionModifier.prototype.constants = {};
+SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME = "catmull_clark";
+SubdivisionModifier.prototype.constants.LOOP_SCHEME = "loop";
 
 // Applies the "modify" pattern
 /**
@@ -62,7 +66,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
-	if(this.scheme === CATMULL_CLARK_SCHEME){
+	if(this.scheme === SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME){
 		geometry.toTriangleMesh();
 	}
 
@@ -78,9 +82,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/////////////////////////////
 	// Performs one iteration of Subdivision
 	SubdivisionModifier.prototype.smooth = function ( geometry ) {
-		if(this.scheme === LOOP_SCHEME) {
+		if(this.scheme === SubdivisionModifier.prototype.constants.LOOP_SCHEME) {
 			Loop_Subdivision (geometry);
-		} else if (this.scheme === CATMULL_CLARK_SCHEME){
+		} else if (this.scheme === SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME){
 			Catmull_Clark_Subdivision (geometry);
 		}
 	};
@@ -126,9 +130,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
 		let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 
-		if(!(key in edgeToFaces)){
-			edgeToFaces.set(key, new Set(face));
-		} else {
+		if(!(edgeToFaces.has(key))){
+			edgeToFaces.set(key, new Set([face]));
+		} else {	
 			edgeToFaces.get(key).add(face);
 		}
 	}
@@ -158,7 +162,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 */
 	function addFacePerVertex (vertexIdx, face, vertexToFaces){
 		let faceSet;
-		if(vertexIdx in vertexToFaces){
+		if(vertexToFaces.has(vertexIdx)){
 			faceSet = vertexToFaces.get(vertexIdx);
 		} else {
 			faceSet = new Set();
@@ -175,7 +179,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 */
 	function addEdgePerVertex (vertexAIdx, vertexBIdx, vertexToEdges){
 		let edgeSet;
-		if(vertexAIdx in vertexToEdges){
+		if(vertexToEdges.has(vertexAIdx)){
 			edgeSet = vertexToEdges.get(vertexAIdx);
 		} else {
 			edgeSet = new Set();
@@ -183,7 +187,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		}
 		edgeSet.add(generateEdgeKey(vertexAIdx, vertexBIdx));
 
-		if(vertexBIdx in vertexToEdges){
+		if(vertexToEdges.has(vertexBIdx)){
 			edgeSet = vertexToEdges.get(vertexBIdx);
 		} else {
 			edgeSet = new Set();
@@ -202,19 +206,19 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 */
 	function generateVertexInfo(faces, vertexToFaces, vertexToEdges){
 		for (const face of faces) {
-			if(face instanceof Face3){
-				addFacePerVertex(face.a, vertexToFaces);
-				addFacePerVertex(face.b, vertexToFaces);
-				addFacePerVertex(face.c, vertexToFaces);
+			if(face.constructor.name === "Face3"){
+				addFacePerVertex(face.a, face, vertexToFaces);
+				addFacePerVertex(face.b, face, vertexToFaces);
+				addFacePerVertex(face.c, face, vertexToFaces);
 
 				addEdgePerVertex(face.a, face.b, vertexToEdges);
 				addEdgePerVertex(face.b, face.c, vertexToEdges);
 				addEdgePerVertex(face.c, face.a, vertexToEdges);
-			} else if (face instanceof Quad){
-				addFacePerVertex(face.a, vertexToFaces);
-				addFacePerVertex(face.b, vertexToFaces);
-				addFacePerVertex(face.c, vertexToFaces);
-				addFacePerVertex(face.d, vertexToFaces);
+			} else if (face.constructor.name === "Quad"){
+				addFacePerVertex(face.a, face, vertexToFaces);
+				addFacePerVertex(face.b, face, vertexToFaces);
+				addFacePerVertex(face.c, face, vertexToFaces);
+				addFacePerVertex(face.d, face, vertexToFaces);
 
 				addEdgePerVertex(face.a, face.b, vertexToEdges);
 				addEdgePerVertex(face.b, face.c, vertexToEdges);
@@ -237,7 +241,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		for (let index = 0, length = faces.length; index < length; index++) {
 			face = faces[index];
 
-			if (face instanceof Face3){
+			if (face.constructor.name === "Face3"){
 				vertexA = vertices[face.a];
 				vertexB = vertices[face.b];
 				vertexC = vertices[face.c];
@@ -246,7 +250,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 						.addVectors(vertexA, vertexB)
 						.add(vertexC)
 						.multiplyScalar(1/3));
-			} else if (face instanceof Quad){
+			} else if (face.constructor.name === "Quad"){
 				vertexA = vertices[face.a];
 				vertexB = vertices[face.b];
 				vertexC = vertices[face.c];
@@ -373,7 +377,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		let edgePointIndex = 0, facePointIndex = 0;
 
 		for (let [face, facePoint] of faceToFacePoint) {
-			if (face instanceof Face3){
+			if (face.constructor.name === "Face3"){
 				facePoints.push(facePoint);
 				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
 				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
@@ -409,7 +413,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 				facePointIndex++;
 				edgePointIndex += 3;
-			} else if (face instanceof Quad){
+			} else if (face.constructor.name === "Quad"){
 				facePoints.push(facePoint);
 				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
 				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
@@ -483,17 +487,29 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edgeToFaces);
 
+		console.log("edgeToFaces: ", edgeToFaces);
+
 		// generate vertex -> {set {faces} , set {edges}}
-		generateVertexInfo(faces, edgeToFaces, vertexToFaces, vertexToEdges);
+		generateVertexInfo(faces, vertexToFaces, vertexToEdges);
+
+		console.log("vertexToFaces: ", vertexToFaces);
+		console.log("vertexToEdges: ", vertexToEdges);
 
 		// calculate the face points for all faces
 		generateFacePoints(faces, vertices, faceToFacePoint);
+		
+		console.log("faceToFacePoint: ", faceToFacePoint);
 
 		// calculate edge points
 		generateEdgePoints(vertices, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
 
+		console.log("edgeToEdgePoint: ", edgeToEdgePoint);
+
 		// calculate new vertex positions
 		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
+
+		console.log("new vertices: ", nVertices);
+
 
 		// generate smoothed mesh
 		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);

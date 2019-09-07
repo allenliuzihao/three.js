@@ -929,7 +929,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	toTriangleMesh: function() {
 		if(this.faces === undefined || this.faces.length === 0 || this.faces[0] instanceof Face3 ){
-			console.log( 'THREE.Geometry.toTriangleMesh(): geometry invalid.', this );
+			console.log( 'THREE.Geometry.toTriangleMesh(): geometry should be quad faces to convert to triangle faces.', this );
 			return;
 		}
 
