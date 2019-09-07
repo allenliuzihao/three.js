@@ -355,16 +355,85 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
-	 * generate smoothed mesh based on new sets of data points.
+	 * generate quad faces and new vertices from face points and edge points.
 	 * 
-	 * @param {Vector3[]} nVertices 
-	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints 
-	 * @param {Map<String, Vector3>} edgeToEdgePoints
+	 * @param {Vector3[]} vertices
+	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoint
+	 * @param {Map<String, Vector3>} edgeToEdgePoint
 	 * @returns object containing vertices and quads of smoothed mesh
 	 */
-	function generateSmoothedMesh (nVertices, faceToFacePoints, edgeToEdgePoints) {
-		
-		return { "vertices": [], "quads": [] };
+	function generateSmoothedMesh (vertices, faceToFacePoint, edgeToEdgePoint) {
+		let facePoints = new Array(), edgePoints = new Array();
+		let quads = new Array();
+
+		let edgePointIndex = 0, facePointIndex = 0;
+
+		for (let [face, facePoint] of faceToFacePoint) {
+			if (face instanceof Face3){
+				facePoints.push(facePoint);
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.c, face.a)));
+
+				quads.push(
+					new Quad(
+						edgePointIndex + vertices.length + faceToFacePoint.size, 
+						face.b, 
+						edgePointIndex+ 1 + vertices.length + faceToFacePoint.size, 
+						facePointIndex + vertices.length));
+				quads.push(
+					new Quad(
+						facePointIndex + vertices.length,
+						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
+						face.c, 
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+				quads.push(
+					new Quad(
+						facePointIndex + vertices.length,
+						edgePointIndex + vertices.length + faceToFacePoint.size, 
+						face.a, 
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+
+				facePointIndex++;
+				edgePointIndex += 3;
+			} else if (face instanceof Quad){
+				facePoints.push(facePoint);
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.c, face.d)));
+				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.d, face.a)));
+
+				quads.push(
+					new Quad(
+						face.a,
+						edgePointIndex + vertices.length + faceToFacePoint.size,
+						facePointIndex + vertices.length, 
+						edgePointIndex+ 3 + vertices.length + faceToFacePoint.size));
+				quads.push(
+					new Quad(
+						edgePointIndex + vertices.length + faceToFacePoint.size,
+						face.b, 
+						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
+						facePointIndex + vertices.length));
+				quads.push(
+					new Quad(
+						facePointIndex + vertices.length,
+						edgePointIndex + 1 + vertices.length + faceToFacePoint.size, 
+						face.c, 
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size));
+				quads.push(
+					new Quad(
+						edgePointIndex + 3 + vertices.length + faceToFacePoint.size,
+						facePointIndex + vertices.length, 
+						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						face.d));
+
+				facePointIndex++;
+				edgePointIndex += 4;
+			}
+		}
+
+		return { "vertices": vertices.concat(facePoints).concat(edgePoints),"quads": quads };
 	}
 
 	/**
@@ -380,8 +449,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 		let vertices = geometry.vertices, faces = geometry.faces;
 		let edgeToFaces = new Map()
-			,faceToFacePoints = new Map()
-			,edgeToEdgePoints = new Map()
+			,faceToFacePoint = new Map()
+			,edgeToEdgePoint = new Map()
 			,vertexToFaces = new Map()
 			,vertexToEdges = new Map()
 			,nVertices = new Array(vertices.length);
@@ -393,16 +462,16 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		generateVertexInfo(faces, edgeToFaces, vertexToFaces, vertexToEdges);
 
 		// calculate the face points for all faces
-		generateFacePoints(faces, vertices, faceToFacePoints);
+		generateFacePoints(faces, vertices, faceToFacePoint);
 
 		// calculate edge points
-		generateEdgePoints(vertices, edgeToFaces, faceToFacePoints, edgeToEdgePoints);
+		generateEdgePoints(vertices, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
 
 		// calculate new vertex positions
-		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoints, nVertices);
+		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
 
 		// generate smoothed mesh
-		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoints, edgeToEdgePoints);
+		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);
 
 		// set the new geometry
 		geometry.vertices = smoothed["vertices"];
