@@ -36,7 +36,6 @@ function Geometry() {
 	this.vertices = [];
 	this.colors = [];
 	this.faces = [];
-	this.quads = [];
 	this.faceVertexUvs = [[]];
 
 	this.morphTargets = [];
