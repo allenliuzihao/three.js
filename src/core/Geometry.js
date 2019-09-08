@@ -1,5 +1,6 @@
 import { EventDispatcher } from './EventDispatcher.js';
 import { Face3 } from './Face3.js';
+import { Quad } from './Quad.js';
 import { Matrix3 } from '../math/Matrix3.js';
 import { Sphere } from '../math/Sphere.js';
 import { Box3 } from '../math/Box3.js';
@@ -928,7 +929,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	},
 
 	toTriangleMesh: function() {
-		if(this.faces === undefined || this.faces.length === 0 || this.faces[0] instanceof Face3 ){
+		if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor !== "Quad" ){
 			console.log( 'THREE.Geometry.toTriangleMesh(): geometry should be quad faces to convert to triangle faces.', this );
 			return;
 		}
@@ -936,6 +937,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		let faces = [];
 
 		this.faces.forEach(quad => {
+			
 			faces.concat(quad.toTriangleFaces());
 		});
 

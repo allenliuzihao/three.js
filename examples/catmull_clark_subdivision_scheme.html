@@ -32,9 +32,11 @@
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 			import { SubdivisionModifier } from './jsm/modifiers/SubdivisionModifier.js';
 
-			let camera, scene, renderer, stats, smoothMesh;
+			// variables
+			let camera, scene, renderer, stats, smoothMesh, wireframe;
 
-			let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+			var smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
+			var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
 
 			let faceIndices = [ 'a', 'b', 'c' ];
 
@@ -42,42 +44,56 @@
 				subdivisions: 0
 			};
 
+			// camera setup
 			camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
 			camera.position.z = 400;
 
+			// scene setup
 			scene = new THREE.Scene();
+			// lighting
+			let light = new THREE.PointLight( 0xffffff, 1.5 );
+			light.position.set( 400, 600, 800 );
+			scene.add( light );
+			// geometry and mesh setup
 			let geometry = new THREE.BoxGeometry( 200, 200, 200 );
+			let material = new THREE.MeshBasicMaterial( { color: 0xA52A2A, wireframe: true } );
 			let mesh = new THREE.Mesh( geometry, material );
-			scene.add( mesh );
+			scene.add(mesh);
+			// for updating the meshes
+			smoothMesh = new THREE.Mesh( undefined, smoothMaterial );
+			wireframe = new THREE.Mesh( undefined, wireframeMaterial );
+			scene.add(smoothMesh, wireframe);
 
-			smoothMesh = new THREE.Mesh( undefined, material );
-			scene.add(smoothMesh);
-
+			// render setup
 			renderer = new THREE.WebGLRenderer( { antialias: true } );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 
+			// stats setup
 			stats = new Stats();
 			document.body.appendChild( stats.dom );
 
+			// orbit control setup
 			var controls = new OrbitControls( camera, renderer.domElement );
 			controls.minDistance = 50;
 			controls.maxDistance = 400;
 
+			// window resize and gui
 			window.addEventListener( 'resize', onWindowResize, false );
 
-			// stuff
 			let gui = new GUI();
 			gui.add( params, 'subdivisions', 0, 3 ).step(1).onChange(function (subdivisions) {
 				subdivide( geometry, subdivisions );
 			});
 
+			// operations
 			subdivide( geometry, params.subdivisions );
 			animate();	
 
 			function subdivide( geometry, subdivisions ) {
 				var modifier = new SubdivisionModifier( subdivisions, SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME);
+				
 				var smoothGeometry = modifier.modify( geometry );
 
 				// colorify faces
@@ -100,7 +116,8 @@
 
 				if ( smoothMesh.geometry ) smoothMesh.geometry.dispose();
 				smoothMesh.geometry = new THREE.BufferGeometry().fromGeometry(smoothGeometry);
-				
+				wireframe.geometry = smoothMesh.geometry;
+
 				updateUI(geometry, smoothGeometry);
 			}
 
