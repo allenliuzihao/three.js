@@ -69,9 +69,9 @@
 
 			// stuff
 			let gui = new GUI();
-			gui.add( params, 'subdivisions', 0, 3 ).step( 1 ).onChange( function ( subdivisions ) {
+			gui.add( params, 'subdivisions', 0, 3 ).step(1).onChange(function (subdivisions) {
 				subdivide( geometry, subdivisions );
-			} );
+			});
 
 			subdivide( geometry, params.subdivisions );
 			animate();	
@@ -98,12 +98,10 @@
 
 				}
 
-				// convert to THREE.BufferGeometry
-
 				if ( smoothMesh.geometry ) smoothMesh.geometry.dispose();
-				smoothMesh.geometry = new THREE.BufferGeometry().fromGeometry( smoothGeometry );
+				smoothMesh.geometry = new THREE.BufferGeometry().fromGeometry(smoothGeometry);
 				
-				updateUI( geometry, smoothGeometry );
+				updateUI(geometry, smoothGeometry);
 			}
 
 			function updateUI( originalGeometry, smoothGeometry ) {
