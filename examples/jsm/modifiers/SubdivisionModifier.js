@@ -66,10 +66,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	}
 
-	if(this.scheme === SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME){
-		geometry.toTriangleMesh();
-	}
-
+	// threejs render triangles
+	geometry.toTriangleMesh();
+	
 	geometry.computeFaceNormals();
 	geometry.computeVertexNormals();
 

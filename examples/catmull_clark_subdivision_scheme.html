@@ -32,10 +32,9 @@
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 			import { SubdivisionModifier } from './jsm/modifiers/SubdivisionModifier.js';
 
-			var camera, scene, renderer, stats, smoothMesh, wireframe;
+			var camera, scene, renderer, stats, smoothMesh;
 
-			var smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors } );
-			var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
+			var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 
 			var faceIndices = [ 'a', 'b', 'c' ];
 
@@ -47,42 +46,16 @@
 
 			function init() {
 
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 500 );
-				camera.position.z = 100;
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.z = 400;
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xf0f0f0 );
+				let geometry = new THREE.BoxGeometry( 200, 200, 200 );
+				let mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
 
-				var light = new THREE.PointLight( 0xffffff, 1.5 );
-				light.position.set( 1000, 1000, 2000 );
-				scene.add( light );
-
-				var loader = new THREE.BufferGeometryLoader();
-				loader.load( 'models/json/WaltHeadLo_buffergeometry.json', function ( bufferGeometry ) {
-
-					// converting to legacy THREE.Geometry because SubdivisionModifier only returns THREE.Geometry
-
-					var geometry = new THREE.Geometry().fromBufferGeometry( bufferGeometry );
-					geometry.mergeVertices();
-
-					var material = new THREE.MeshBasicMaterial( { color: 0xcccccc, wireframe: true } );
-					var mesh = new THREE.Mesh( bufferGeometry, material );
-					scene.add( mesh );
-
-					var gui = new GUI();
-
-					gui.add( params, 'subdivisions', 0, 3 ).step( 1 ).onChange( function ( subdivisions ) {
-
-						subdivide( geometry, subdivisions );
-
-					} );
-
-					//
-
-					subdivide( geometry, params.subdivisions );
-					animate();
-
-				} );
+				smoothMesh = new THREE.Mesh( undefined, material );
+				scene.add(smoothMesh);
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -92,20 +65,20 @@
 				stats = new Stats();
 				document.body.appendChild( stats.dom );
 
-				//
-
 				var controls = new OrbitControls( camera, renderer.domElement );
 				controls.minDistance = 50;
 				controls.maxDistance = 400;
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
-				//
+				// stuff
+				let gui = new GUI();
+				gui.add( params, 'subdivisions', 0, 3 ).step( 1 ).onChange( function ( subdivisions ) {
+					subdivide( geometry, subdivisions );
+				} );
 
-				smoothMesh = new THREE.Mesh( undefined, smoothMaterial );
-				wireframe = new THREE.Mesh( undefined, wireframeMaterial );
-				scene.add( smoothMesh, wireframe );
-
+				subdivide( geometry, params.subdivisions );
+				animate();				
 			}
 
 			function subdivide( geometry, subdivisions ) {
@@ -136,18 +109,12 @@
 				// convert to THREE.BufferGeometry
 
 				if ( smoothMesh.geometry ) smoothMesh.geometry.dispose();
-
 				smoothMesh.geometry = new THREE.BufferGeometry().fromGeometry( smoothGeometry );
-				wireframe.geometry = smoothMesh.geometry;
-
-				//
-
+				
 				updateUI( geometry, smoothGeometry );
-
 			}
 
 			function updateUI( originalGeometry, smoothGeometry ) {
-
 				document.getElementById( 'original-vertex-count' ).textContent = originalGeometry.vertices.length;
 				document.getElementById( 'original-face-count' ).textContent = originalGeometry.faces.length;
 
@@ -168,18 +135,9 @@
 			//
 
 			function animate() {
-
-				requestAnimationFrame( animate );
-
-				render();
-				stats.update();
-
-			}
-
-			function render() {
-
+				requestAnimationFrame(animate);
 				renderer.render( scene, camera );
-
+				stats.update();
 			}
 
 		</script>
