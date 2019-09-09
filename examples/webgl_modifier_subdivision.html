@@ -53,9 +53,22 @@
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf0f0f0 );
 
-				var light = new THREE.PointLight( 0xffffff, 1.5 );
-				light.position.set( 1000, 1000, 2000 );
-				scene.add( light );
+				var light1 = new THREE.PointLight( 0xffffff, 1.5 );
+				light1.position.set( 1000, 1000, 2000 );
+				scene.add( light1 );
+
+				var light2 = new THREE.PointLight( 0xffffff, 1.5 );
+				light2.position.set( -1000, 1000, 2000 );
+				scene.add( light2 );
+
+				var light3 = new THREE.PointLight( 0xffffff, 1.5 );
+				light3.position.set( -1000, 1000, -2000 );
+				scene.add( light3 );
+
+				var light3 = new THREE.PointLight( 0xffffff, 1.5 );
+				light3.position.set( 1000, -1000, -2000 );
+				scene.add( light3 );
+
 
 				var loader = new THREE.BufferGeometryLoader();
 				loader.load( 'models/json/WaltHeadLo_buffergeometry.json', function ( bufferGeometry ) {
