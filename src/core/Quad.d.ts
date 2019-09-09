@@ -104,8 +104,9 @@ export class Quad {
 	 * Material index (points to {@link Geometry.materials}).
 	 */
 	materialIndex: number;
-
+	
 	toTriangleFaces(): Face3[];
+	toQuadMesh(): Quad;
 
 	clone(): this;
 

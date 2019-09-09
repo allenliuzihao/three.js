@@ -32,17 +32,13 @@
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 			import { SubdivisionModifier } from './jsm/modifiers/SubdivisionModifier.js';
 
-			// variables
-			let camera, scene, renderer, stats, smoothMesh, wireframe;
-
+			// constants
 			var smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
 			var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
-
 			let faceIndices = [ 'a', 'b', 'c' ];
-
-			let params = {
-				subdivisions: 0
-			};
+			
+			// variables
+			let camera, scene, renderer, stats, smoothMesh, wireframe;
 
 			// camera setup
 			camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
@@ -82,13 +78,8 @@
 			// window resize and gui
 			window.addEventListener( 'resize', onWindowResize, false );
 
-			let gui = new GUI();
-			gui.add( params, 'subdivisions', 0, 3 ).step(1).onChange(function (subdivisions) {
-				subdivide( geometry, subdivisions );
-			});
-
 			// operations
-			subdivide( geometry, params.subdivisions );
+			//subdivide( geometry, params.subdivisions );
 			animate();	
 
 			function subdivide( geometry, subdivisions ) {

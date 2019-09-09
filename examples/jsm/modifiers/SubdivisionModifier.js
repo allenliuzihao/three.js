@@ -57,6 +57,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	geometry.mergeVertices();
+	geometry.toQuadMesh();
 
 	var repeats = this.subdivisions;
 
@@ -67,10 +68,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	// threejs render triangles
-	if(this.scheme === SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME){
-		geometry.toTriangleMesh();
-	}
-	
+	geometry.toTriangleMesh();
+
+	// compute normals
 	geometry.computeFaceNormals();
 	geometry.computeVertexNormals();
 
@@ -405,9 +405,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
-						edgePointIndex + vertices.length + faceToFacePoint.size, 
-						face.a, 
 						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						face.a, 
+						edgePointIndex + vertices.length + faceToFacePoint.size, 
 						undefined,
 						undefined,
 						face.materialIndex));
