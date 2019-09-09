@@ -44,6 +44,7 @@
 			camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
 			camera.position.z = 400;
 
+			// TODO: setup three cubes with different levels of subdivision
 			// scene setup
 			scene = new THREE.Scene();
 			// lighting
@@ -79,7 +80,7 @@
 			window.addEventListener( 'resize', onWindowResize, false );
 
 			// operations
-			//subdivide( geometry, params.subdivisions );
+			subdivide( geometry, params.subdivisions );
 			animate();	
 
 			function subdivide( geometry, subdivisions ) {
