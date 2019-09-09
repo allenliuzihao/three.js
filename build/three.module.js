@@ -12202,7 +12202,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 	toQuadMesh: function (){
-		if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor !== "Face3" ){
+		if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor.name !== "Face3" ){
 			console.log( 'THREE.Geometry.toQuadMesh(): geometry should be triangle faces to convert to quad faces.', this );
 			return;
 		}
