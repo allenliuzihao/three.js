@@ -80,7 +80,7 @@
 			let mesh2 = new THREE.Mesh( geometry2, basicMaterial );
 			let smoothMesh2 = new THREE.Mesh( undefined, smoothMaterial );
 			let wireframe2 = new THREE.Mesh( undefined, wireframeMaterial );
-			subdivide(geometry2, 0, smoothMesh2, wireframe2);
+			subdivide(geometry2, 1, smoothMesh2, wireframe2);
 			scene.add(mesh2, smoothMesh2, wireframe2);
 
 			let geometry3 = new THREE.BoxGeometry( 200, 200, 200 );
@@ -90,7 +90,7 @@
 			mesh3.position.x = 400;
 			smoothMesh3.position.x = 400;
 			wireframe3.position.x = 400;
-			subdivide(geometry3, 0, smoothMesh3, wireframe3);
+			subdivide(geometry3, 2, smoothMesh3, wireframe3);
 			scene.add(mesh3, smoothMesh3, wireframe3);
 
 			// render setup
