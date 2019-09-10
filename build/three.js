@@ -12206,6 +12206,9 @@
 			if ( newUvs2 ) { this.faceVertexUvs[ 1 ] = newUvs2; }
 
 		},
+		/**
+		 * assume that input mesh is a triangluar quads
+		 */
 		toQuadMesh: function (){
 			if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor.name !== "Face3" ){
 				console.log( 'THREE.Geometry.toQuadMesh(): geometry should be triangle faces to convert to quad faces.', this );
@@ -12303,8 +12306,10 @@
 			 * @param {Map<String, Set<Number>>} edgeToFaces 
 			 * @param {Set<Number>} mergedFaces 
 			 * @param {Quad[]} quads 
+			 * @param {Vector2[][][]} oldUvs
+			 * @param {Vector2[][][]} newUvs
 			 */
-			function mergeFacesToQuad(edge, faceIdx, vertices, faces, edgeToFaces, mergedFaces, quads){
+			function mergeTwoFacesToQuad(edge, faceIdx, vertices, faces, edgeToFaces, mergedFaces, quads, oldUvs, newUvs){
 				var faceSet = edgeToFaces.get(edge);
 
 				if(faceSet.size !== 2){
@@ -12313,15 +12318,14 @@
 				}
 
 				var otherFaceIdx;
-				var face, otherFace;
 				var faceSetArr = Array.from(faceSet);
 				if(faceSetArr[0] === faceIdx){
 					otherFaceIdx = faceSetArr[1];
 				} else {
 					otherFaceIdx = faceSetArr[0];
 				}
-				face = faces[faceIdx];
-				otherFace = faces[otherFaceIdx];
+				var face = faces[faceIdx];
+				var otherFace = faces[otherFaceIdx];
 
 				var edgeSplit = edge.split(EDGE_SPLIT);
 				var vertexAIndexOnEdge = Number(edgeSplit[0]);
@@ -12372,46 +12376,51 @@
 						}
 						quad.vertexNormals[3] = face.vertexNormals[2];
 					}
-					
-					// TODO: handle uv
 
-					
 					quads.push(quad);
 					mergedFaces.add(faceIdx);
 					mergedFaces.add(otherFaceIdx);
+
+					if(oldUvs !== undefined){
+						var faceUv, otherFaceUv;
+						for(var l = 0, ll = oldUvs.length; l < ll; ++l){					
+							faceUv = oldUvs[l][faceIdx];
+							otherFaceUv = oldUvs[l][otherFaceIdx];
+							if(other === otherFace.a){
+								newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[0], faceUv[2] ]);
+							} else if (other === otherFace.b){
+								newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[1], faceUv[2] ]);
+							} else if (other === otherFace.c){
+								newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[2], faceUv[2] ]);
+							}
+						}
+					}
 				}
 			}
 
-			var edge1, edge2, edge3, face;
 			var quads = new Array();
 			var edgeToFaces = new Map(), mergedFaces = new Set();
+			var faceVertexUvs = new Array(this.faceVertexUvs.length);
+			for(var i = 0, il = this.faceVertexUvs.length; i < il; ++i){
+				faceVertexUvs[i] = new Array();
+			}
 
 			// generate edge to faces lookup
 			generateEdges(this.faces, edgeToFaces);
 
 			// merge quads
+			var face;
 			for (var fi = 0, fl = this.faces.length; fi < fl; fi++) {
 				face = this.faces[fi];
 				if(!mergedFaces.has(fi)){
-					edge1 = generateEdgeKey(face.a, face.b);
-					edge2 = generateEdgeKey(face.b, face.c);
-					edge3 = generateEdgeKey(face.c, face.a);
-					mergeFacesToQuad(edge1, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
-					mergeFacesToQuad(edge2, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
-					mergeFacesToQuad(edge3, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
+					mergeTwoFacesToQuad(generateEdgeKey(face.a, face.b), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
+					mergeTwoFacesToQuad(generateEdgeKey(face.b, face.c), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
+					mergeTwoFacesToQuad(generateEdgeKey(face.c, face.a), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
 				}
 			}
-
-			// for uvs
-			/**
-			let faceVertexUvs = new Array(this.faceVertexUvs.length);
-			let faceToFaceIndex = new Map(); 	// Face to face index
-			for (let fi = 0, fl = this.faces.length; fi < fl; fi++) {
-				faceToFaceIndex.set(this.faces[fi], fi);
-			}
-			 */
 			
 			this.faces = quads;
+			this.faceVertexUvs = faceVertexUvs;
 		},
 		toTriangleMesh: function() {
 			if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor.name !== "Quad" ){

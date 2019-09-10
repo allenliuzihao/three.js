@@ -123,7 +123,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * 
 	 * @param {Number} vertexAIdx 
 	 * @param {Number} vertexBIdx 
-	 * @param {Face3|Quad} face 
+	 * @param {Number} faceIdx 
 	 * @param {Map<String, Set<Number>>} edgeToFaces 
 	 */
 	function generateEachEdge (vertexAIdx, vertexBIdx, faceIdx, edgeToFaces){
@@ -407,22 +407,107 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
+	 * @param {Number} faceIdx 
+	 * @param {Vector2[][][]} oldUvs 
+	 * @param {Vector2[][][]} newUvs 
+	 * @param {boolean} quad 
+	 */
+	function generateNewUvs(faceIdx, oldUvs, newUvs, quad){
+		if(oldUvs === undefined){
+			console.warn("generateNewUvs could not find old uvs.");
+			return;
+		}
+
+		if(quad){
+			let uva, uvb, uvc, uvd;
+			let uvfp, uve1, uve2, uve3, uve4;
+			for(let l = 0, ll = oldUvs.length; l < ll; ++l){
+				uva = oldUvs[l][faceIdx][0];
+				uvb = oldUvs[l][faceIdx][1];
+				uvc = oldUvs[l][faceIdx][2];
+				uvd = oldUvs[l][faceIdx][3];
+				uvfp = 
+					new Vector2()
+					.addVectors(uva, uvb)
+					.add(uvc)
+					.add(uvd)
+					.multiplyScalar(1/4);
+				uve1 = 
+					new Vector2()
+					.addVectors(uva, uvb)
+					.multiplyScalar(1/2);
+				uve2 = 
+					new Vector2()
+					.addVectors(uvb, uvc)
+					.multiplyScalar(1/2);
+				uve3 = 
+					new Vector2()
+					.addVectors(uvc, uvd)
+					.multiplyScalar(1/2);
+				uve4 = 
+					new Vector2()
+					.addVectors(uvd, uva)
+					.multiplyScalar(1/2);
+
+				newUvs[l].push([ uva, uve1, uvfp, uve4 ]);
+				newUvs[l].push([ uve1, uvb, uve2, uvfp ]);
+				newUvs[l].push([ uvfp, uve2, uvc, uve3 ]);
+				newUvs[l].push([ uve4, uvfp, uve3, uvd ]);
+			}
+		} else {
+			let uva, uvb, uvc;
+			let uvfp, uve1, uve2, uve3;
+			for(let l = 0, ll = oldUvs.length; l < ll; ++l){
+				uva = oldUvs[l][faceIdx][0];
+				uvb = oldUvs[l][faceIdx][1];
+				uvc = oldUvs[l][faceIdx][2];
+				uvfp = 
+					new Vector2()
+					.addVectors(uva, uvb)
+					.add(uvc)
+					.multiplyScalar(1/3);
+				uve1 = 
+					new Vector2()
+					.addVectors(uva, uvb)
+					.multiplyScalar(1/2);
+				uve2 = 
+					new Vector2()
+					.addVectors(uvb, uvc)
+					.multiplyScalar(1/2);
+				uve3 = 
+					new Vector2()
+					.addVectors(uva, uvc)
+					.multiplyScalar(1/2);
+
+				newUvs[l].push([ uve1, uvb, uve2, uvfp ]);
+				newUvs[l].push([ uvfp, uve2, uvc, uve3 ]);
+				newUvs[l].push([ uvfp, uve3, uva, uve1 ]);
+			}
+		}
+	}
+
+	/**
 	 * generate quad faces and new vertices from face points and edge points.
 	 * 
 	 * @param {Vector3[]} vertices
 	 * @param {Face3[]|Quad[]} faces
+	 * @param {Vector2[][][]} faceVertexUvs
 	 * @param {Map<Number, Vector3>} faceToFacePoint
 	 * @param {Map<String, Vector3>} edgeToEdgePoint
 	 * @returns object containing vertices and quads of smoothed mesh
 	 */
-	function generateSmoothedMesh (vertices, faces, faceToFacePoint, edgeToEdgePoint) {
+	function generateSmoothedMesh (vertices, faces, faceVertexUvs, faceToFacePoint, edgeToEdgePoint) {
 		let quads = new Array();
 		let facePoints = new Array(), edgePoints = new Array();
 		let edgePointToEdgePointIndex = new Map();
 
+		let uvs = new Array(faceVertexUvs.length);
+		for(let i = 0, il = faceVertexUvs.length; i < il; ++i){
+			uvs[i] = new Array();
+		}
+
 		let facePointIndex = 0;
 		let face;
-
 		for (let [faceIdx, facePoint] of faceToFacePoint) {
 			face = faces[faceIdx];
 			if (face.constructor.name === "Face3"){
@@ -463,6 +548,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 						undefined,
 						undefined,
 						face.materialIndex));
+
+				generateNewUvs(faceIdx, faceVertexUvs, uvs, false);
 
 				facePointIndex++;
 			} else if (face.constructor.name === "Quad"){
@@ -514,11 +601,13 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 						undefined,
 						face.materialIndex));
 
+				generateNewUvs(faceIdx, faceVertexUvs, uvs, true);
+
 				facePointIndex++;
 			}
 		}
 
-		return { "vertices": vertices.concat(facePoints).concat(edgePoints), "quads": quads };
+		return { "vertices": vertices.concat(facePoints).concat(edgePoints), "quads": quads, "uvs": uvs};
 	}
 
 	/**
@@ -532,7 +621,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				return;
 			}
 
-		let vertices = geometry.vertices, faces = geometry.faces;
+		let vertices = geometry.vertices, faces = geometry.faces, faceVertexUvs = geometry.faceVertexUvs;
 		let edgeToFaces = new Map()
 			,faceToFacePoint = new Map()
 			,edgeToEdgePoint = new Map()
@@ -550,20 +639,18 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		generateFacePoints(vertices, faces, faceToFacePoint);
 		
 		// calculate edge points
-		generateEdgePoints(vertices, faces, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
+		generateEdgePoints(vertices, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
 
 		// calculate new vertex positions
-		generateNewVertexPosition(vertices, faces, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
+		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
 
 		// generate smoothed mesh
-		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);
+		let smoothed = generateSmoothedMesh(nVertices, faces, faceVertexUvs, faceToFacePoint, edgeToEdgePoint);
 
 		// set the new geometry
 		geometry.vertices = smoothed["vertices"];
 		geometry.faces = smoothed["quads"];
-
-		// TODO: uv interpolation
-		
+		geometry.faceVertexUvs = smoothed["uvs"];		
 	}
 
 	/* Loop subdivision */

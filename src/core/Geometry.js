@@ -10,7 +10,6 @@ import { Vector2 } from '../math/Vector2.js';
 import { Color } from '../math/Color.js';
 import { Object3D } from './Object3D.js';
 import { _Math } from '../math/Math.js';
-import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from 'constants';
 
 /**
  * @author mrdoob / http://mrdoob.com/
