@@ -65,7 +65,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	while ( repeats -- > 0 ) {
 		this.smooth( geometry );
 	}
-	console.log("after subdivision: ", geometry);
+	console.log("after subdivision: ", geometry.clone());
+
+	let gc = geometry.clone();
+
+	gc.faces.forEach(face => {
+		let a = gc.vertices[face.a];
+		let b = gc.vertices[face.b];
+		let c = gc.vertices[face.c];
+		let d = gc.vertices[face.d];
+		console.log("face a->b->c->d: ", a, b, c, d);
+	});
 
 	// threejs render triangles
 	geometry.toTriangleMesh();
@@ -263,10 +273,12 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				vertexB = vertices[face.b];
 				vertexC = vertices[face.c];
 				let vertexD = vertices[face.d];
+
 				faceToFacePoints.set(face, 
 					new Vector3()
 						.addVectors(vertexA, vertexB)
-						.addVectors(vertexC, vertexD)
+						.add(vertexC)
+						.add(vertexD)
 						.multiplyScalar(1/4));
 			}
 		}
@@ -301,7 +313,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			edgePoint = 
 				new Vector3()
 				.addVectors(vertexA, vertexB)
-				.addVectors(facePointA, facePointB)
+				.add(facePointA)
+				.add(facePointB)
 				.multiplyScalar(1/4);
 			
 			edgeToEdgePoints.set(edge, edgePoint);
@@ -511,6 +524,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			}
 		}
 
+		console.log("new vertices: ", vertices);
+		console.log("face points: ", facePoints);
+		console.log("edge points: ", edgePoints);
 		return { "vertices": vertices.concat(facePoints).concat(edgePoints), "quads": quads };
 	}
 
@@ -536,28 +552,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
 		generateEdges(faces, edgeToFaces);
 
-		console.log("edgeToFaces: ", edgeToFaces);
-
 		// generate vertex -> {set {faces} , set {edges}}
 		generateVertexInfo(faces, vertexToFaces, vertexToEdges);
-
-		console.log("vertexToFaces: ", vertexToFaces);
-		console.log("vertexToEdges: ", vertexToEdges);
 
 		// calculate the face points for all faces
 		generateFacePoints(faces, vertices, faceToFacePoint);
 		
-		console.log("faceToFacePoint: ", faceToFacePoint);
-
 		// calculate edge points
 		generateEdgePoints(vertices, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
 
-		console.log("edgeToEdgePoint: ", edgeToEdgePoint);
-
 		// calculate new vertex positions
 		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
-
-		console.log("new vertices: ", nVertices);
 
 		// generate smoothed mesh
 		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);
@@ -566,7 +571,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		geometry.vertices = smoothed["vertices"];
 		geometry.faces = smoothed["quads"];
 
-		console.log("geometry.faces: ", geometry.faces);
 		// TODO: vertex color and uv interpolation
 		
 	}
