@@ -61,21 +61,9 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	var repeats = this.subdivisions;
 
-	console.log("prior to subdivision: ", geometry);
 	while ( repeats -- > 0 ) {
 		this.smooth( geometry );
 	}
-	console.log("after subdivision: ", geometry.clone());
-
-	let gc = geometry.clone();
-
-	gc.faces.forEach(face => {
-		let a = gc.vertices[face.a];
-		let b = gc.vertices[face.b];
-		let c = gc.vertices[face.c];
-		let d = gc.vertices[face.d];
-		console.log("face a->b->c->d: ", a, b, c, d);
-	});
 
 	// threejs render triangles
 	geometry.toTriangleMesh();
@@ -524,9 +512,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			}
 		}
 
-		console.log("new vertices: ", vertices);
-		console.log("face points: ", facePoints);
-		console.log("edge points: ", edgePoints);
 		return { "vertices": vertices.concat(facePoints).concat(edgePoints), "quads": quads };
 	}
 
