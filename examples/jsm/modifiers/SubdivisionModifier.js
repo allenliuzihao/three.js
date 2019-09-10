@@ -61,11 +61,11 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 	var repeats = this.subdivisions;
 
+	console.log("prior to subdivision: ", geometry);
 	while ( repeats -- > 0 ) {
-
 		this.smooth( geometry );
-
 	}
+	console.log("after subdivision: ", geometry);
 
 	// threejs render triangles
 	geometry.toTriangleMesh();
@@ -130,7 +130,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 */
 	function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
 		let key = generateEdgeKey(vertexAIdx, vertexBIdx);
-
 		if(!(edgeToFaces.has(key))){
 			edgeToFaces.set(key, new Set([face]));
 		} else {	
@@ -149,9 +148,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 		for (let i = 0, il = faces.length; i < il; i++ ) {
 			face = faces[i];
-			generateEachEdge(face.a, face.b, face, edgeToFaces);
-			generateEachEdge(face.b, face.c, face, edgeToFaces);
-			generateEachEdge(face.c, face.a, face, edgeToFaces);
+
+			if(face.constructor.name === "Face3"){
+				generateEachEdge(face.a, face.b, face, edgeToFaces);
+				generateEachEdge(face.b, face.c, face, edgeToFaces);
+				generateEachEdge(face.c, face.a, face, edgeToFaces);
+			} else if (face.constructor.name === "Quad"){
+				generateEachEdge(face.a, face.b, face, edgeToFaces);
+				generateEachEdge(face.b, face.c, face, edgeToFaces);
+				generateEachEdge(face.c, face.d, face, edgeToFaces);
+				generateEachEdge(face.d, face.a, face, edgeToFaces);
+			}
 		}
 	}
 
@@ -326,13 +333,15 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 			if(faces.size == 0 || edges.size == 0){
 				console.error("SubdivisionModifier generateNewVertexPosition: faces and edges for vertex should not be empty.", this);
+				return;
 			}
 
 			for (const face of faces) {
-				if(face in faceToFacePoint){
+				if(faceToFacePoint.has(face)){
 					facePoints.push(faceToFacePoint.get(face));
 				} else {
 					console.error("SubdivisionModifier generateNewVertexPosition: face should have a face point.", this);
+					return;
 				}
 			}
 
@@ -340,15 +349,17 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				edgeSplits = edge.split(EDGE_SPLIT);
 				vertexA = vertices[Number(edgeSplits[0])];
 				vertexB = vertices[Number(edgeSplits[1])];
-				edgeMidPoints.push(new Vector3().addVectors(vertexA, vertexB).multiplyScalar(2.0));
+				edgeMidPoints.push(new Vector3().addVectors(vertexA, vertexB).multiplyScalar(1/2));
 			}
 
 			if(facePoints.length === 0 || edgeMidPoints.length === 0){
 				console.error("SubdivisionModifier generateNewVertexPosition: number of face points and edge midpoints should not be empty.", this);
+				return;
 			}
 
 			if(facePoints.length !== edgeMidPoints.length) {
 				console.error("SubdivisionModifier generateNewVertexPosition: number of face points should match the number of edge midpoints", this);
+				return;
 			}
 
 			n = facePoints.length;
@@ -364,6 +375,34 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	}
 
 	/**
+	 * @param {Number} vertexA
+	 * @param {Number} vertexB
+	 * @param {Number} offset 
+	 * @param {Map<String, Vector3>} edgeToEdgePoint 
+	 * @param {Map<Vector3, Number>} edgePointToEdgePointIndex 
+	 * @param {Vector3[]} edgePoints 
+	 */
+	function saveEdgePoint(faceVertexA, faceVertexB, offset, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints){
+		if(edgePoints === undefined || !(edgePoints instanceof Array)){
+			console.error("edge points must be valid: ", edgePoints);
+			return -1;
+		}
+
+		let edgePointIndex;
+		let edgePoint = edgeToEdgePoint.get(generateEdgeKey(faceVertexA, faceVertexB));
+
+		if(!edgePointToEdgePointIndex.has(edgePoint)){
+			edgePointIndex = offset + edgePoints.length;
+			edgePointToEdgePointIndex.set(edgePoint, edgePointIndex);
+			edgePoints.push(edgePoint);
+		} else {
+			edgePointIndex = edgePointToEdgePointIndex.get(edgePoint);
+		}
+
+		return edgePointIndex;
+	}
+
+	/**
 	 * generate quad faces and new vertices from face points and edge points.
 	 * 
 	 * @param {Vector3[]} vertices
@@ -372,23 +411,29 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * @returns object containing vertices and quads of smoothed mesh
 	 */
 	function generateSmoothedMesh (vertices, faceToFacePoint, edgeToEdgePoint) {
-		let facePoints = new Array(), edgePoints = new Array();
 		let quads = new Array();
+		let facePoints = new Array(), edgePoints = new Array();
+		let edgePointToEdgePointIndex = new Map();
 
-		let edgePointIndex = 0, facePointIndex = 0;
+		let facePointIndex = 0;
 
 		for (let [face, facePoint] of faceToFacePoint) {
 			if (face.constructor.name === "Face3"){
 				facePoints.push(facePoint);
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.c, face.a)));
+
+				let edgePoint1Index = saveEdgePoint(face.a, face.b, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+				let edgePoint2Index = saveEdgePoint(face.b, face.c, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+				let edgePoint3Index = saveEdgePoint(face.c, face.a, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+
+				if(edgePoint1Index === -1 || edgePoint2Index === -1 || edgePoint3Index === -1){
+					return;
+				}
 
 				quads.push(
 					new Quad(
-						edgePointIndex + vertices.length + faceToFacePoint.size, 
+						edgePoint1Index, 
 						face.b, 
-						edgePointIndex+ 1 + vertices.length + faceToFacePoint.size, 
+						edgePoint2Index, 
 						facePointIndex + vertices.length,
 						undefined,
 						undefined,
@@ -396,45 +441,49 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
-						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
+						edgePoint2Index,
 						face.c, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						edgePoint3Index,
 						undefined,
 						undefined,
 						face.materialIndex));
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						edgePoint3Index,
 						face.a, 
-						edgePointIndex + vertices.length + faceToFacePoint.size, 
+						edgePoint1Index, 
 						undefined,
 						undefined,
 						face.materialIndex));
 
 				facePointIndex++;
-				edgePointIndex += 3;
 			} else if (face.constructor.name === "Quad"){
 				facePoints.push(facePoint);
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.a, face.b)));
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.b, face.c)));
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.c, face.d)));
-				edgePoints.push(edgeToEdgePoint.get(generateEdgeKey(face.d, face.a)));
+
+				let edgePoint1Index = saveEdgePoint(face.a, face.b, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+				let edgePoint2Index = saveEdgePoint(face.b, face.c, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+				let edgePoint3Index = saveEdgePoint(face.c, face.d, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+				let edgePoint4Index = saveEdgePoint(face.d, face.a, vertices.length + faceToFacePoint.size, edgeToEdgePoint, edgePointToEdgePointIndex, edgePoints);
+
+				if(edgePoint1Index === -1 || edgePoint2Index === -1 || edgePoint3Index === -1 || edgePoint4Index === -1){
+					return;
+				}
 
 				quads.push(
 					new Quad(
 						face.a,
-						edgePointIndex + vertices.length + faceToFacePoint.size,
+						edgePoint1Index,
 						facePointIndex + vertices.length, 
-						edgePointIndex+ 3 + vertices.length + faceToFacePoint.size,
+						edgePoint4Index,
 						undefined,
 						undefined,
 						face.materialIndex));
 				quads.push(
 					new Quad(
-						edgePointIndex + vertices.length + faceToFacePoint.size,
+						edgePoint1Index,
 						face.b, 
-						edgePointIndex + 1 + vertices.length + faceToFacePoint.size,
+						edgePoint2Index,
 						facePointIndex + vertices.length,
 						undefined,
 						undefined,
@@ -442,28 +491,27 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				quads.push(
 					new Quad(
 						facePointIndex + vertices.length,
-						edgePointIndex + 1 + vertices.length + faceToFacePoint.size, 
+						edgePoint2Index, 
 						face.c, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						edgePoint3Index,
 						undefined,
 						undefined,
 						face.materialIndex));
 				quads.push(
 					new Quad(
-						edgePointIndex + 3 + vertices.length + faceToFacePoint.size,
+						edgePoint4Index,
 						facePointIndex + vertices.length, 
-						edgePointIndex + 2 + vertices.length + faceToFacePoint.size,
+						edgePoint3Index,
 						face.d,
 						undefined,
 						undefined,
 						face.materialIndex));
 
 				facePointIndex++;
-				edgePointIndex += 4;
 			}
 		}
 
-		return { "vertices": vertices.concat(facePoints).concat(edgePoints),"quads": quads };
+		return { "vertices": vertices.concat(facePoints).concat(edgePoints), "quads": quads };
 	}
 
 	/**
@@ -511,7 +559,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 		console.log("new vertices: ", nVertices);
 
-
 		// generate smoothed mesh
 		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);
 
@@ -519,6 +566,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		geometry.vertices = smoothed["vertices"];
 		geometry.faces = smoothed["quads"];
 
+		console.log("geometry.faces: ", geometry.faces);
 		// TODO: vertex color and uv interpolation
 		
 	}

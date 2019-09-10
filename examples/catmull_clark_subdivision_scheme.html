@@ -63,9 +63,9 @@
 			directionalLight5.position.set(-1000, 0, 0);
 			directionalLight5.target.position.set(0, 0, 0);
 			scene.add(directionalLight1, directionalLight2, directionalLight3, directionalLight4, directionalLight5);
-			
 
 			// geometry and mesh setup
+			/*
 			let geometry1 = new THREE.BoxGeometry( 200, 200, 200 );
 			let mesh1 = new THREE.Mesh( geometry1, basicMaterial );
 			let smoothMesh1 = new THREE.Mesh( undefined, smoothMaterial );
@@ -75,6 +75,7 @@
 			wireframe1.position.x = -400;
 			subdivide(geometry1, 0, smoothMesh1, wireframe1);
 			scene.add(mesh1, smoothMesh1, wireframe1);
+			*/
 
 			let geometry2 = new THREE.BoxGeometry( 200, 200, 200 );
 			let mesh2 = new THREE.Mesh( geometry2, basicMaterial );
@@ -82,7 +83,8 @@
 			let wireframe2 = new THREE.Mesh( undefined, wireframeMaterial );
 			subdivide(geometry2, 1, smoothMesh2, wireframe2);
 			scene.add(mesh2, smoothMesh2, wireframe2);
-
+			
+			/*
 			let geometry3 = new THREE.BoxGeometry( 200, 200, 200 );
 			let mesh3 = new THREE.Mesh( geometry3, basicMaterial );
 			let smoothMesh3 = new THREE.Mesh( undefined, smoothMaterial );
@@ -92,7 +94,8 @@
 			wireframe3.position.x = 400;
 			subdivide(geometry3, 2, smoothMesh3, wireframe3);
 			scene.add(mesh3, smoothMesh3, wireframe3);
-
+			*/
+			
 			// render setup
 			renderer = new THREE.WebGLRenderer( { antialias: true } );
 			renderer.setPixelRatio( window.devicePixelRatio );
@@ -112,7 +115,9 @@
 
 			function subdivide( geometry, subdivisions, smoothMesh, wireframeMesh ) {
 				var modifier = new SubdivisionModifier( subdivisions, SubdivisionModifier.prototype.constants.CATMULL_CLARK_SCHEME);
+				console.log("geometry: ", geometry);
 				var smoothGeometry = modifier.modify( geometry );
+				console.log("smoothGeometry: ", smoothGeometry);
 
 				smoothMesh.geometry = new THREE.BufferGeometry().fromGeometry(smoothGeometry);
 				wireframeMesh.geometry = smoothMesh.geometry;

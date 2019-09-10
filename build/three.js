@@ -11630,7 +11630,6 @@
 			return this;
 
 		},
-
 		computeFaceNormals: function () {
 
 			var cb = new Vector3(), ab = new Vector3();
@@ -12243,15 +12242,36 @@
 			}
 
 			/**
+			 * 
+			 * @param {Vector3[]} vertices 
+			 * @param {Face3} face 
+			 */
+			function computeFaceNormal(vertices, face){
+				var vA = vertices[ face.a ];
+				var vB = vertices[ face.b ];
+				var vC = vertices[ face.c ];
+
+				var cb = new Vector3(), ab = new Vector3();
+				cb.subVectors( vC, vB );
+				ab.subVectors( vA, vB );
+				cb.cross( ab );
+
+				cb.normalize();
+				
+				return cb;
+			}
+
+			/**
 			 * check if two faces are on the same plane
+			 * @param {Vector3[]} vertices
 			 * @param {Face3} triangle1 
 			 * @param {Face3} triangle2 
 			 */
-			function isTwoFaceOnSamePlane(triangle1, triangle2){
-				triangle1.computeFaceNormals();
-				triangle2.computeFaceNormals();
+			function isTwoFaceOnSamePlane(vertices, triangle1, triangle2){
+				var norm1 = computeFaceNormal(vertices, triangle1);
+				var norm2 = computeFaceNormal(vertices, triangle2);
 
-				return Math.abs(triangle1.dot(triangle2)) === 1;
+				return Math.abs(norm1.dot(norm2)) === 1;
 			}
 
 			/**
@@ -12277,12 +12297,14 @@
 			/**
 			 * @param {String} edge 
 			 * @param {Face3} face
-			 * @param {Map<String, Face3>} edgeToFaces 
+			 * @param {Vector3[]} vertices
+			 * @param {Map<String, Set<Face3>>} edgeToFaces 
 			 * @param {Quad[]} quads 
 			 * @param {Set<Face3>} mergedFaces 
 			 */
-			function mergeFacesToQuad(edge, face, edgeToFaces, mergedFaces, quads){
+			function mergeFacesToQuad(edge, face, vertices, edgeToFaces, mergedFaces, quads){
 				var faceSet = edgeToFaces.get(edge);
+
 				if(faceSet.size !== 2){
 					console.error("THREE.Geometry.toQuadMesh(): geometry should have each edge associated with two faces.", this);
 					return;
@@ -12306,39 +12328,48 @@
 					return;
 				}
 
-				if(isTwoFaceOnSamePlane(face, otherFace)){				
+				if(isTwoFaceOnSamePlane(vertices, face, otherFace)){				
 					var set = new Set([face.a, face.b, face.c]);
 					var other = [vertexAIndexOnEdge, vertexBIndexOnEdge, vertexFaceIndex1, vertexFaceIndex2].filter(index => {
 						return !set.has(index);
 					})[0];
 					// assume that two triangle faces have the same color and materials
 					var quad = new Quad(face.a, face.b, other, face.c, face.normal, face.color, face.materialIndex);
+					
 					// vertex colors
-					quad.vertexColors[0] = face.vertexColors[0];
-					quad.vertexColors[1] = face.vertexColors[1];
-					if(other === otherFace.a){
-						quad.vertexColors[2] = otherFace.vertexColors[0];
-					} else if (other === otherFace.b){
-						quad.vertexColors[2] = otherFace.vertexColors[1];
-					} else if (other === otherFace.c){
-						quad.vertexColors[2] = otherFace.vertexColors[2];
+					if(face.vertexColors !== undefined && face.vertexColors.length === 3 &&
+						otherFace.vertexColors !== undefined && otherFace.vertexColors.length === 3){
+						quad.vertexColors = new Array(4);
+						quad.vertexColors[0] = face.vertexColors[0];
+						quad.vertexColors[1] = face.vertexColors[1];
+						if(other === otherFace.a){
+							quad.vertexColors[2] = otherFace.vertexColors[0];
+						} else if (other === otherFace.b){
+							quad.vertexColors[2] = otherFace.vertexColors[1];
+						} else if (other === otherFace.c){
+							quad.vertexColors[2] = otherFace.vertexColors[2];
+						}
+						quad.vertexColors[3] = face.vertexColors[2];
 					}
-					quad.vertexColors[3] = face.vertexColors[2];
 
 					// vertex normals
-					quad.vertexNormals[0] = face.vertexNormals[0];
-					quad.vertexNormals[1] = face.vertexNormals[1];
-					if(other === otherFace.a){
-						quad.vertexNormals[2] = otherFace.vertexNormals[0];
-					} else if (other === otherFace.b){
-						quad.vertexNormals[2] = otherFace.vertexNormals[1];
-					} else if (other === otherFace.c){
-						quad.vertexNormals[2] = otherFace.vertexNormals[2];
+					if(face.vertexNormals !== undefined && face.vertexNormals.length === 3 &&
+						otherFace.vertexNormals !== undefined && otherFace.vertexNormals.length === 3){
+						quad.vertexNormals = new Array(4);
+						quad.vertexNormals[0] = face.vertexNormals[0];
+						quad.vertexNormals[1] = face.vertexNormals[1];
+						if(other === otherFace.a){
+							quad.vertexNormals[2] = otherFace.vertexNormals[0];
+						} else if (other === otherFace.b){
+							quad.vertexNormals[2] = otherFace.vertexNormals[1];
+						} else if (other === otherFace.c){
+							quad.vertexNormals[2] = otherFace.vertexNormals[2];
+						}
+						quad.vertexNormals[3] = face.vertexNormals[2];
 					}
-					quad.vertexNormals[3] = face.vertexNormals[2];
-
-					// todo: handle uv
-
+					
+					// TODO: handle uv
+					
 					quads.push(quad);
 					mergedFaces.add(face);
 					mergedFaces.add(otherFace);
@@ -12353,16 +12384,16 @@
 			generateEdges(this.faces, edgeToFaces);
 
 			// merge quads
-			for (var face in this.faces) {
+			this.faces.forEach(face => {
 				if(!mergedFaces.has(face)){
 					edge1 = generateEdgeKey(face.a, face.b);
 					edge2 = generateEdgeKey(face.b, face.c);
 					edge3 = generateEdgeKey(face.c, face.a);
-					mergeFacesToQuad(edge1, face, edgeToFaces, mergedFaces, quads);
-					mergeFacesToQuad(edge2, face, edgeToFaces, mergedFaces, quads);
-					mergeFacesToQuad(edge3, face, edgeToFaces, mergedFaces, quads);
+					mergeFacesToQuad(edge1, face, this.vertices, edgeToFaces, mergedFaces, quads);
+					mergeFacesToQuad(edge2, face, this.vertices, edgeToFaces, mergedFaces, quads);
+					mergeFacesToQuad(edge3, face, this.vertices, edgeToFaces, mergedFaces, quads);
 				}
-			}
+			});
 			this.faces = quads;
 		},
 		toTriangleMesh: function() {
@@ -12372,11 +12403,9 @@
 			}
 
 			var faces = [];
-			for (var quad in this.faces) {
-				if(quad.constructor.name !== "Quad"){
-					faces.concat(quad.toTriangleFaces());
-				}
-			}
+			this.faces.forEach(quad => {
+				faces = faces.concat(quad.toTriangleFaces());
+			});
 			this.faces = faces;
 		},
 
