@@ -1102,16 +1102,18 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				mergedFaces.add(faceIdx);
 				mergedFaces.add(otherFaceIdx);
 
-				let faceUv, otherFaceUv;
-				for(let l = 0, ll = oldUvs.length; l < ll; ++l){					
-					faceUv = oldUvs[l][faceIdx];
-					otherFaceUv = oldUvs[l][otherFaceIdx];
-					if(other === otherFace.a){
-						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[0], faceUv[2] ]);
-					} else if (other === otherFace.b){
-						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[1], faceUv[2] ]);
-					} else if (other === otherFace.c){
-						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[2], faceUv[2] ]);
+				if(oldUvs !== undefined){
+					let faceUv, otherFaceUv;
+					for(let l = 0, ll = oldUvs.length; l < ll; ++l){					
+						faceUv = oldUvs[l][faceIdx];
+						otherFaceUv = oldUvs[l][otherFaceIdx];
+						if(other === otherFace.a){
+							newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[0], faceUv[2] ]);
+						} else if (other === otherFace.b){
+							newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[1], faceUv[2] ]);
+						} else if (other === otherFace.c){
+							newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[2], faceUv[2] ]);
+						}
 					}
 				}
 			}

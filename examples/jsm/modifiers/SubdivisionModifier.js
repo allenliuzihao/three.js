@@ -124,14 +124,14 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * @param {Number} vertexAIdx 
 	 * @param {Number} vertexBIdx 
 	 * @param {Face3|Quad} face 
-	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces 
+	 * @param {Map<String, Set<Number>>} edgeToFaces 
 	 */
-	function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
+	function generateEachEdge (vertexAIdx, vertexBIdx, faceIdx, edgeToFaces){
 		let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 		if(!(edgeToFaces.has(key))){
-			edgeToFaces.set(key, new Set([face]));
+			edgeToFaces.set(key, new Set([faceIdx]));
 		} else {	
-			edgeToFaces.get(key).add(face);
+			edgeToFaces.get(key).add(faceIdx);
 		}
 	}
 
@@ -139,7 +139,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * generate "vertex1-vertex2" to faces set per face
 	 * 
 	 * @param {Face3[]|Quad[]} faces 
-	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces 
+	 * @param {Map<String, Set<Number>>} edgeToFaces 
 	 */
 	function generateEdges(faces, edgeToFaces) {
 		let face;
@@ -148,14 +148,14 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			face = faces[i];
 
 			if(face.constructor.name === "Face3"){
-				generateEachEdge(face.a, face.b, face, edgeToFaces);
-				generateEachEdge(face.b, face.c, face, edgeToFaces);
-				generateEachEdge(face.c, face.a, face, edgeToFaces);
+				generateEachEdge(face.a, face.b, i, edgeToFaces);
+				generateEachEdge(face.b, face.c, i, edgeToFaces);
+				generateEachEdge(face.c, face.a, i, edgeToFaces);
 			} else if (face.constructor.name === "Quad"){
-				generateEachEdge(face.a, face.b, face, edgeToFaces);
-				generateEachEdge(face.b, face.c, face, edgeToFaces);
-				generateEachEdge(face.c, face.d, face, edgeToFaces);
-				generateEachEdge(face.d, face.a, face, edgeToFaces);
+				generateEachEdge(face.a, face.b, i, edgeToFaces);
+				generateEachEdge(face.b, face.c, i, edgeToFaces);
+				generateEachEdge(face.c, face.d, i, edgeToFaces);
+				generateEachEdge(face.d, face.a, i, edgeToFaces);
 			}
 		}
 	}
@@ -163,10 +163,10 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/**
 	 * add a face information to a vertex.
 	 * @param {Number} vertexIdx 
-	 * @param {Face3|Quad} face 
-	 * @param {Map<Number, Set<Face3|Quad>>} vertexToFaces 
+	 * @param {Number} faceIdx 
+	 * @param {Map<Number, Set<Number>>} vertexToFaces 
 	 */
-	function addFacePerVertex (vertexIdx, face, vertexToFaces){
+	function addFacePerVertex (vertexIdx, faceIdx, vertexToFaces){
 		let faceSet;
 		if(vertexToFaces.has(vertexIdx)){
 			faceSet = vertexToFaces.get(vertexIdx);
@@ -174,7 +174,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			faceSet = new Set();
 			vertexToFaces.set(vertexIdx, faceSet);
 		}
-		faceSet.add(face);
+		faceSet.add(faceIdx);
 	}
 
 	/**
@@ -207,24 +207,26 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * basically all the incident faces and edges for that vertex 
 	 * 
 	 * @param {Face3[]|Quad[]} faces 
-	 * @param {Map<Number, Set<Face3|Quad>>} vertexToFaces
+	 * @param {Map<Number, Set<Number>>} vertexToFaces
 	 * @param {Map<Number, Set<String>>} vertexToEdges
 	 */
 	function generateVertexInfo(faces, vertexToFaces, vertexToEdges){
-		for (const face of faces) {
+		let face;
+		for (let fi = 0, fl = faces.length; fi < fl; ++fi) {
+			face = faces[fi];
 			if(face.constructor.name === "Face3"){
-				addFacePerVertex(face.a, face, vertexToFaces);
-				addFacePerVertex(face.b, face, vertexToFaces);
-				addFacePerVertex(face.c, face, vertexToFaces);
+				addFacePerVertex(face.a, fi, vertexToFaces);
+				addFacePerVertex(face.b, fi, vertexToFaces);
+				addFacePerVertex(face.c, fi, vertexToFaces);
 
 				addEdgePerVertex(face.a, face.b, vertexToEdges);
 				addEdgePerVertex(face.b, face.c, vertexToEdges);
 				addEdgePerVertex(face.c, face.a, vertexToEdges);
 			} else if (face.constructor.name === "Quad"){
-				addFacePerVertex(face.a, face, vertexToFaces);
-				addFacePerVertex(face.b, face, vertexToFaces);
-				addFacePerVertex(face.c, face, vertexToFaces);
-				addFacePerVertex(face.d, face, vertexToFaces);
+				addFacePerVertex(face.a, fi, vertexToFaces);
+				addFacePerVertex(face.b, fi, vertexToFaces);
+				addFacePerVertex(face.c, fi, vertexToFaces);
+				addFacePerVertex(face.d, fi, vertexToFaces);
 
 				addEdgePerVertex(face.a, face.b, vertexToEdges);
 				addEdgePerVertex(face.b, face.c, vertexToEdges);
@@ -237,11 +239,11 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	/**
 	 * calculate face point per face
 	 * 
-	 * @param {Face3[]|Quad[]} faces 
 	 * @param {Vector3[]} vertices 
-	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints 
+	 * @param {Face3[]|Quad[]} faces 
+	 * @param {Map<Number, Vector3>} faceToFacePoints 
 	 */
-	function generateFacePoints (faces, vertices, faceToFacePoints){
+	function generateFacePoints (vertices, faces, faceToFacePoints){
 		let face, vertexA, vertexB, vertexC;
 
 		for (let index = 0, length = faces.length; index < length; index++) {
@@ -251,7 +253,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				vertexA = vertices[face.a];
 				vertexB = vertices[face.b];
 				vertexC = vertices[face.c];
-				faceToFacePoints.set(face, 
+				faceToFacePoints.set(index, 
 					new Vector3()
 						.addVectors(vertexA, vertexB)
 						.add(vertexC)
@@ -262,7 +264,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 				vertexC = vertices[face.c];
 				let vertexD = vertices[face.d];
 
-				faceToFacePoints.set(face, 
+				faceToFacePoints.set(index, 
 					new Vector3()
 						.addVectors(vertexA, vertexB)
 						.add(vertexC)
@@ -276,8 +278,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * for each edge, generate an edge point.
 	 * 
 	 * @param {Vector3[]} vertices 
-	 * @param {Map<String, Set<Face3|Quad>>} edgeToFaces
-	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoints
+	 * @param {Map<String, Set<Number>>} edgeToFaces
+	 * @param {Map<Number, Vector3>} faceToFacePoints
 	 * @param {Map<String, Vector3>} edgeToEdgePoints
 	 */
 	function generateEdgePoints (vertices, edgeToFaces, faceToFacePoints, edgeToEdgePoints) {
@@ -292,6 +294,7 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 
 			if(faces.size !== 2){
 				console.error("SubdivisionModifier generateEdgePoints error: each edge should only have two incident faces.");
+				return;
 			}
 
 			facesArray = Array.from(faces);
@@ -407,18 +410,21 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 	 * generate quad faces and new vertices from face points and edge points.
 	 * 
 	 * @param {Vector3[]} vertices
-	 * @param {Map<Face3|Quad, Vector3>} faceToFacePoint
+	 * @param {Face3[]|Quad[]} faces
+	 * @param {Map<Number, Vector3>} faceToFacePoint
 	 * @param {Map<String, Vector3>} edgeToEdgePoint
 	 * @returns object containing vertices and quads of smoothed mesh
 	 */
-	function generateSmoothedMesh (vertices, faceToFacePoint, edgeToEdgePoint) {
+	function generateSmoothedMesh (vertices, faces, faceToFacePoint, edgeToEdgePoint) {
 		let quads = new Array();
 		let facePoints = new Array(), edgePoints = new Array();
 		let edgePointToEdgePointIndex = new Map();
 
 		let facePointIndex = 0;
+		let face;
 
-		for (let [face, facePoint] of faceToFacePoint) {
+		for (let [faceIdx, facePoint] of faceToFacePoint) {
+			face = faces[faceIdx];
 			if (face.constructor.name === "Face3"){
 				facePoints.push(facePoint);
 
@@ -534,20 +540,20 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 			,vertexToEdges = new Map()
 			,nVertices = new Array(vertices.length);
 
-		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces}
+		// generate edges information; each edge information is "vertex1-vertex2" -> set {faces ids}
 		generateEdges(faces, edgeToFaces);
 
-		// generate vertex -> {set {faces} , set {edges}}
+		// generate vertex -> set {face ids} and vertex -> set {edges}
 		generateVertexInfo(faces, vertexToFaces, vertexToEdges);
 
 		// calculate the face points for all faces
-		generateFacePoints(faces, vertices, faceToFacePoint);
+		generateFacePoints(vertices, faces, faceToFacePoint);
 		
 		// calculate edge points
-		generateEdgePoints(vertices, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
+		generateEdgePoints(vertices, faces, edgeToFaces, faceToFacePoint, edgeToEdgePoint);
 
 		// calculate new vertex positions
-		generateNewVertexPosition(vertices, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
+		generateNewVertexPosition(vertices, faces, vertexToFaces, vertexToEdges, faceToFacePoint, nVertices);
 
 		// generate smoothed mesh
 		let smoothed = generateSmoothedMesh(nVertices, faceToFacePoint, edgeToEdgePoint);
@@ -557,7 +563,6 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		geometry.faces = smoothed["quads"];
 
 		// TODO: uv interpolation
-		
 		
 	}
 
