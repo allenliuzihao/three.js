@@ -10,6 +10,7 @@ import { Vector2 } from '../math/Vector2.js';
 import { Color } from '../math/Color.js';
 import { Object3D } from './Object3D.js';
 import { _Math } from '../math/Math.js';
+import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from 'constants';
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -926,6 +927,9 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		if ( newUvs2 ) this.faceVertexUvs[ 1 ] = newUvs2;
 
 	},
+	/**
+	 * assume that input mesh is a triangluar quads
+	 */
 	toQuadMesh: function (){
 		if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor.name !== "Face3" ){
 			console.log( 'THREE.Geometry.toQuadMesh(): geometry should be triangle faces to convert to quad faces.', this );
@@ -940,24 +944,24 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 			return vertexIndexA + EDGE_SPLIT + vertexIndexB;
 		}
 
-		function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
+		function generateEachEdge (vertexAIdx, vertexBIdx, fi, edgeToFaces){
 			let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 	
 			if(!(edgeToFaces.has(key))){
-				edgeToFaces.set(key, new Set([face]));
+				edgeToFaces.set(key, new Set([fi]));
 			} else {	
-				edgeToFaces.get(key).add(face);
+				edgeToFaces.get(key).add(fi);
 			}
 		}
 
 		function generateEdges(faces, edgeToFaces) {
 			let face;
 	
-			for (let i = 0, il = faces.length; i < il; i++ ) {
-				face = faces[i];
-				generateEachEdge(face.a, face.b, face, edgeToFaces);
-				generateEachEdge(face.b, face.c, face, edgeToFaces);
-				generateEachEdge(face.c, face.a, face, edgeToFaces);
+			for (let fi = 0, il = faces.length; fi < il; fi++ ) {
+				face = faces[fi];
+				generateEachEdge(face.a, face.b, fi, edgeToFaces);
+				generateEachEdge(face.b, face.c, fi, edgeToFaces);
+				generateEachEdge(face.c, face.a, fi, edgeToFaces);
 			}
 		}
 
@@ -1015,14 +1019,18 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		}
 
 		/**
+		 * 
 		 * @param {String} edge 
-		 * @param {Face3} face
+		 * @param {Number} faceIdx
 		 * @param {Vector3[]} vertices
-		 * @param {Map<String, Set<Face3>>} edgeToFaces 
+		 * @param {Face3} faces
+		 * @param {Map<String, Set<Number>>} edgeToFaces 
+		 * @param {Set<Number>} mergedFaces 
 		 * @param {Quad[]} quads 
-		 * @param {Set<Face3>} mergedFaces 
+		 * @param {Vector2[][][]} oldUvs
+		 * @param {Vector2[][][]} newUvs
 		 */
-		function mergeFacesToQuad(edge, face, vertices, edgeToFaces, mergedFaces, quads){
+		function mergeTwoFacesToQuad(edge, faceIdx, vertices, faces, edgeToFaces, mergedFaces, quads, oldUvs, newUvs){
 			let faceSet = edgeToFaces.get(edge);
 
 			if(faceSet.size !== 2){
@@ -1030,13 +1038,15 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				return;
 			}
 
-			let otherFace;
+			let otherFaceIdx;
 			let faceSetArr = Array.from(faceSet);
-			if(faceSetArr[0] === face){
-				otherFace = faceSetArr[1];
+			if(faceSetArr[0] === faceIdx){
+				otherFaceIdx = faceSetArr[1];
 			} else {
-				otherFace = faceSetArr[0];
+				otherFaceIdx = faceSetArr[0];
 			}
+			let face = faces[faceIdx];
+			let otherFace = faces[otherFaceIdx];
 
 			let edgeSplit = edge.split(EDGE_SPLIT);
 			let vertexAIndexOnEdge = Number(edgeSplit[0]);
@@ -1087,35 +1097,49 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 					}
 					quad.vertexNormals[3] = face.vertexNormals[2];
 				}
-				
-				// TODO: handle uv
-				
-				
+
 				quads.push(quad);
-				mergedFaces.add(face);
-				mergedFaces.add(otherFace);
+				mergedFaces.add(faceIdx);
+				mergedFaces.add(otherFaceIdx);
+
+				let faceUv, otherFaceUv;
+				for(let l = 0, ll = oldUvs.length; l < ll; ++l){					
+					faceUv = oldUvs[l][faceIdx];
+					otherFaceUv = oldUvs[l][otherFaceIdx];
+					if(other === otherFace.a){
+						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[0], faceUv[2] ]);
+					} else if (other === otherFace.b){
+						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[1], faceUv[2] ]);
+					} else if (other === otherFace.c){
+						newUvs[l].push([ faceUv[0], faceUv[1], otherFaceUv[2], faceUv[2] ]);
+					}
+				}
 			}
 		}
 
-		let edge1, edge2, edge3;
 		let quads = new Array();
 		let edgeToFaces = new Map(), mergedFaces = new Set();
+		let faceVertexUvs = new Array(this.faceVertexUvs.length);
+		for(let i = 0, il = this.faceVertexUvs.length; i < il; ++i){
+			faceVertexUvs[i] = new Array();
+		}
 
 		// generate edge to faces lookup
 		generateEdges(this.faces, edgeToFaces);
 
 		// merge quads
-		this.faces.forEach(face => {
-			if(!mergedFaces.has(face)){
-				edge1 = generateEdgeKey(face.a, face.b);
-				edge2 = generateEdgeKey(face.b, face.c);
-				edge3 = generateEdgeKey(face.c, face.a);
-				mergeFacesToQuad(edge1, face, this.vertices, edgeToFaces, mergedFaces, quads);
-				mergeFacesToQuad(edge2, face, this.vertices, edgeToFaces, mergedFaces, quads);
-				mergeFacesToQuad(edge3, face, this.vertices, edgeToFaces, mergedFaces, quads);
+		let face;
+		for (let fi = 0, fl = this.faces.length; fi < fl; fi++) {
+			face = this.faces[fi];
+			if(!mergedFaces.has(fi)){
+				mergeTwoFacesToQuad(generateEdgeKey(face.a, face.b), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
+				mergeTwoFacesToQuad(generateEdgeKey(face.b, face.c), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
+				mergeTwoFacesToQuad(generateEdgeKey(face.c, face.a), fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads, this.faceVertexUvs, faceVertexUvs);
 			}
-		});
+		}
+		
 		this.faces = quads;
+		this.faceVertexUvs = faceVertexUvs;
 	},
 	toTriangleMesh: function() {
 		if(this.faces === undefined || this.faces.length === 0 || this.faces[0].constructor.name !== "Quad" ){

@@ -556,7 +556,8 @@ SubdivisionModifier.prototype.modify = function ( geometry ) {
 		geometry.vertices = smoothed["vertices"];
 		geometry.faces = smoothed["quads"];
 
-		// TODO: vertex color and uv interpolation
+		// TODO: uv interpolation
+		
 		
 	}
 

@@ -12214,24 +12214,24 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 			return vertexIndexA + EDGE_SPLIT + vertexIndexB;
 		}
 
-		function generateEachEdge (vertexAIdx, vertexBIdx, face, edgeToFaces){
+		function generateEachEdge (vertexAIdx, vertexBIdx, fi, edgeToFaces){
 			let key = generateEdgeKey(vertexAIdx, vertexBIdx);
 	
 			if(!(edgeToFaces.has(key))){
-				edgeToFaces.set(key, new Set([face]));
+				edgeToFaces.set(key, new Set([fi]));
 			} else {	
-				edgeToFaces.get(key).add(face);
+				edgeToFaces.get(key).add(fi);
 			}
 		}
 
 		function generateEdges(faces, edgeToFaces) {
 			let face;
 	
-			for (let i = 0, il = faces.length; i < il; i++ ) {
-				face = faces[i];
-				generateEachEdge(face.a, face.b, face, edgeToFaces);
-				generateEachEdge(face.b, face.c, face, edgeToFaces);
-				generateEachEdge(face.c, face.a, face, edgeToFaces);
+			for (let fi = 0, il = faces.length; fi < il; fi++ ) {
+				face = faces[fi];
+				generateEachEdge(face.a, face.b, fi, edgeToFaces);
+				generateEachEdge(face.b, face.c, fi, edgeToFaces);
+				generateEachEdge(face.c, face.a, fi, edgeToFaces);
 			}
 		}
 
@@ -12289,14 +12289,16 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		}
 
 		/**
+		 * 
 		 * @param {String} edge 
-		 * @param {Face3} face
+		 * @param {Number} faceIdx
 		 * @param {Vector3[]} vertices
-		 * @param {Map<String, Set<Face3>>} edgeToFaces 
+		 * @param {Face3} faces
+		 * @param {Map<String, Set<Number>>} edgeToFaces 
+		 * @param {Set<Number>} mergedFaces 
 		 * @param {Quad[]} quads 
-		 * @param {Set<Face3>} mergedFaces 
 		 */
-		function mergeFacesToQuad(edge, face, vertices, edgeToFaces, mergedFaces, quads){
+		function mergeFacesToQuad(edge, faceIdx, vertices, faces, edgeToFaces, mergedFaces, quads){
 			let faceSet = edgeToFaces.get(edge);
 
 			if(faceSet.size !== 2){
@@ -12304,13 +12306,16 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				return;
 			}
 
-			let otherFace;
+			let otherFaceIdx;
+			let face, otherFace;
 			let faceSetArr = Array.from(faceSet);
-			if(faceSetArr[0] === face){
-				otherFace = faceSetArr[1];
+			if(faceSetArr[0] === faceIdx){
+				otherFaceIdx = faceSetArr[1];
 			} else {
-				otherFace = faceSetArr[0];
+				otherFaceIdx = faceSetArr[0];
 			}
+			face = faces[faceIdx];
+			otherFace = faces[otherFaceIdx];
 
 			let edgeSplit = edge.split(EDGE_SPLIT);
 			let vertexAIndexOnEdge = Number(edgeSplit[0]);
@@ -12363,15 +12368,15 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				}
 				
 				// TODO: handle uv
-				
+
 				
 				quads.push(quad);
-				mergedFaces.add(face);
-				mergedFaces.add(otherFace);
+				mergedFaces.add(faceIdx);
+				mergedFaces.add(otherFaceIdx);
 			}
 		}
 
-		let edge1, edge2, edge3;
+		let edge1, edge2, edge3, face;
 		let quads = new Array();
 		let edgeToFaces = new Map(), mergedFaces = new Set();
 
@@ -12379,16 +12384,27 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		generateEdges(this.faces, edgeToFaces);
 
 		// merge quads
-		this.faces.forEach(face => {
-			if(!mergedFaces.has(face)){
+		for (let fi = 0, fl = this.faces.length; fi < fl; fi++) {
+			face = this.faces[fi];
+			if(!mergedFaces.has(fi)){
 				edge1 = generateEdgeKey(face.a, face.b);
 				edge2 = generateEdgeKey(face.b, face.c);
 				edge3 = generateEdgeKey(face.c, face.a);
-				mergeFacesToQuad(edge1, face, this.vertices, edgeToFaces, mergedFaces, quads);
-				mergeFacesToQuad(edge2, face, this.vertices, edgeToFaces, mergedFaces, quads);
-				mergeFacesToQuad(edge3, face, this.vertices, edgeToFaces, mergedFaces, quads);
+				mergeFacesToQuad(edge1, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
+				mergeFacesToQuad(edge2, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
+				mergeFacesToQuad(edge3, fi, this.vertices, this.faces, edgeToFaces, mergedFaces, quads);
 			}
-		});
+		}
+
+		// for uvs
+		/**
+		let faceVertexUvs = new Array(this.faceVertexUvs.length);
+		let faceToFaceIndex = new Map(); 	// Face to face index
+		for (let fi = 0, fl = this.faces.length; fi < fl; fi++) {
+			faceToFaceIndex.set(this.faces[fi], fi);
+		}
+		 */
+		
 		this.faces = quads;
 	},
 	toTriangleMesh: function() {
