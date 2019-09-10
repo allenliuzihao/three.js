@@ -11258,10 +11258,9 @@
 		},
 
 		/**
-		 * counter-clockwise from a to d
+		 * split quads to triangle faces
 		 */
 		toTriangleFaces: function (){
-			// TODO: transfer uv coordinates
 			var face1 = new Face3(this.a, this.b, this.d, this.normal, this.color, this.materialIndex);
 			if (this.vertexColors !== undefined && this.vertexColors.length === 4){
 				face1.vertexColors.push(this.vertexColors[0]);
@@ -11285,6 +11284,7 @@
 				face2.vertexNormals.push(this.vertexNormals[2]);
 				face2.vertexNormals.push(this.vertexNormals[3]);
 			}
+
 			
 			return [face1, face2];
 		}
@@ -12370,6 +12370,7 @@
 					
 					// TODO: handle uv
 					
+					
 					quads.push(quad);
 					mergedFaces.add(face);
 					mergedFaces.add(otherFace);
@@ -12403,10 +12404,31 @@
 			}
 
 			var faces = [];
-			this.faces.forEach(quad => {
-				faces = faces.concat(quad.toTriangleFaces());
+
+			// generate triangle faces
+			this.faces.forEach(face => {
+				faces = faces.concat(face.toTriangleFaces());
 			});
+
+			// uv transfer
+			var faceUv, uvsPerLayer;
+			var faceVertexUvs = new Array();
+			for (var l = 0, ll = this.faceVertexUvs.length; l < ll; l++) {
+				uvsPerLayer = new Array();
+				for(var fi = 0, fl = this.faces.length; fi < fl; fi++){
+					faceUv = this.faceVertexUvs[l][fi];
+					if(faceUv.length !== 4){
+						console.error("Geometry toTriangleMesh: malformed uvs", this.faceVertexUvs);
+						return;
+					}
+					uvsPerLayer.push([faceUv[0], faceUv[1], faceUv[3]]);
+					uvsPerLayer.push([faceUv[1], faceUv[2], faceUv[3]]);
+				}
+				faceVertexUvs.push(uvsPerLayer);
+			}
+
 			this.faces = faces;
+			this.faceVertexUvs = faceVertexUvs;
 		},
 
 		toJSON: function () {

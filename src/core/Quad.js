@@ -60,10 +60,9 @@ Object.assign( Quad.prototype, {
 	},
 
 	/**
-	 * counter-clockwise from a to d
+	 * split quads to triangle faces
 	 */
 	toTriangleFaces: function (){
-		// TODO: transfer uv coordinates
 		let face1 = new Face3(this.a, this.b, this.d, this.normal, this.color, this.materialIndex);
 		if (this.vertexColors !== undefined && this.vertexColors.length === 4){
 			face1.vertexColors.push(this.vertexColors[0]);
@@ -87,6 +86,7 @@ Object.assign( Quad.prototype, {
 			face2.vertexNormals.push(this.vertexNormals[2]);
 			face2.vertexNormals.push(this.vertexNormals[3]);
 		}
+
 		
 		return [face1, face2];
 	}

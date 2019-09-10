@@ -1090,6 +1090,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				
 				// TODO: handle uv
 				
+				
 				quads.push(quad);
 				mergedFaces.add(face);
 				mergedFaces.add(otherFace);
@@ -1123,10 +1124,31 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		}
 
 		let faces = [];
-		this.faces.forEach(quad => {
-			faces = faces.concat(quad.toTriangleFaces());
+
+		// generate triangle faces
+		this.faces.forEach(face => {
+			faces = faces.concat(face.toTriangleFaces());
 		});
+
+		// uv transfer
+		let faceUv, uvsPerLayer;
+		let faceVertexUvs = new Array();
+		for (let l = 0, ll = this.faceVertexUvs.length; l < ll; l++) {
+			uvsPerLayer = new Array();
+			for(let fi = 0, fl = this.faces.length; fi < fl; fi++){
+				faceUv = this.faceVertexUvs[l][fi];
+				if(faceUv.length !== 4){
+					console.error("Geometry toTriangleMesh: malformed uvs", this.faceVertexUvs);
+					return;
+				}
+				uvsPerLayer.push([faceUv[0], faceUv[1], faceUv[3]]);
+				uvsPerLayer.push([faceUv[1], faceUv[2], faceUv[3]]);
+			}
+			faceVertexUvs.push(uvsPerLayer);
+		}
+
 		this.faces = faces;
+		this.faceVertexUvs = faceVertexUvs;
 	},
 
 	toJSON: function () {
