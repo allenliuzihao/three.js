@@ -54,7 +54,6 @@
 			//loader = new DDSLoader();
 			loader = new THREE.TextureLoader();
 			let texture = loader.load(path);
-			texture.minFilter = texture.magFilter = THREE.LinearFilter;
 
 			// materials
 			let basicMaterial = new THREE.MeshBasicMaterial( { color: 0x616660, wireframe: true } );
