@@ -32,13 +32,15 @@
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 			import { SubdivisionModifier } from './jsm/modifiers/SubdivisionModifier.js';
 
-			// constants
-			var basicMaterial = new THREE.MeshBasicMaterial( { color: 0xA52A2A, wireframe: true } );
-			var smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
-			var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
+			import { DDSLoader } from './jsm/loaders/DDSLoader.js';
 			
+			// texture path
+			//let path = "textures/compressed/hepatica_dxt3_mip.dds";
+			//let path = "textures/compressed/disturb_argb_mip.dds";
+			let path = "textures/crate.gif";
+
 			// variables
-			let camera, scene, renderer;
+			let camera, scene, renderer, loader;
 
 			// camera setup
 			camera = new THREE.OrthographicCamera( window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000 );
@@ -46,51 +48,64 @@
 
 			// scene setup
 			scene = new THREE.Scene();
-			// lighting
-			var directionalLight1 = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			directionalLight1.position.set(0, 0, 1000);
-			directionalLight1.target.position.set(0, 0, 0);
-			var directionalLight2 = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			directionalLight2.position.set(0, 1000, 0);
-			directionalLight2.target.position.set(0, 0, 0);
-			var directionalLight3 = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			directionalLight3.position.set(0, -1000, 0);
-			directionalLight3.target.position.set(0, 0, 0);
-			var directionalLight4 = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			directionalLight4.position.set(1000, 0, 0);
-			directionalLight4.target.position.set(0, 0, 0);
-			var directionalLight5 = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			directionalLight5.position.set(-1000, 0, 0);
-			directionalLight5.target.position.set(0, 0, 0);
-			scene.add(directionalLight1, directionalLight2, directionalLight3, directionalLight4, directionalLight5);
+			scene.background = new THREE.Color( 0xc9c2bd );
+
+			// texture setup
+			//loader = new DDSLoader();
+			loader = new THREE.TextureLoader();
+			let texture = loader.load(path);
+			texture.minFilter = texture.magFilter = THREE.LinearFilter;
+
+			// materials
+			let basicMaterial = new THREE.MeshBasicMaterial( { color: 0x616660, wireframe: true } );
+			let smoothMaterial = new THREE.MeshBasicMaterial( { map: texture } );
+
+			// shading color: 0x269153, 0x48585C, 0xA52A2A
+			//let smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
+			let wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
+
+			function setUpGeometry(x, w, h, d, subdivisions){
+				let geometry = new THREE.BoxGeometry( w, h, d );
+				let mesh = new THREE.Mesh( geometry, basicMaterial );
+				let smoothMesh = new THREE.Mesh( undefined, smoothMaterial );
+				let wireframe = new THREE.Mesh( undefined, wireframeMaterial );
+				
+				mesh.position.x = x;
+				smoothMesh.position.x = x;
+				wireframe.position.x = x;
+				
+				if(subdivisions === 0){
+					smoothMesh.geometry = mesh.geometry;
+					scene.add(smoothMesh);
+				} else {
+					subdivide(geometry, subdivisions, smoothMesh, wireframe);
+					scene.add(mesh, smoothMesh, wireframe);
+				}
+			}
+
+			// set up lighting
+			var light1 = new THREE.PointLight( 0xffffff, 1.5 );
+			light1.position.set( 1000, 1000, 2000 );
+			scene.add( light1 );
+
+			var light2 = new THREE.PointLight( 0xffffff, 1.5 );
+			light2.position.set( -1000, 1000, 2000 );
+			scene.add( light2 );
+
+			var light3 = new THREE.PointLight( 0xffffff, 1.5 );
+			light3.position.set( -1000, 1000, -2000 );
+			scene.add( light3 );
+
+			var light3 = new THREE.PointLight( 0xffffff, 1.5 );
+			light3.position.set( 1000, -1000, -2000 );
+			scene.add( light3 );
+
 
 			// geometry and mesh setup
-			let geometry1 = new THREE.BoxGeometry( 200, 200, 200 );
-			let mesh1 = new THREE.Mesh( geometry1, basicMaterial );
-			let smoothMesh1 = new THREE.Mesh( undefined, smoothMaterial );
-			let wireframe1 = new THREE.Mesh( undefined, wireframeMaterial );
-			mesh1.position.x = -400;
-			smoothMesh1.position.x = -400;
-			wireframe1.position.x = -400;
-			subdivide(geometry1, 1, smoothMesh1, wireframe1);
-			scene.add(mesh1, smoothMesh1, wireframe1);
-
-			let geometry2 = new THREE.BoxGeometry( 200, 200, 200 );
-			let mesh2 = new THREE.Mesh( geometry2, basicMaterial );
-			let smoothMesh2 = new THREE.Mesh( undefined, smoothMaterial );
-			let wireframe2 = new THREE.Mesh( undefined, wireframeMaterial );
-			subdivide(geometry2, 2, smoothMesh2, wireframe2);
-			scene.add(mesh2, smoothMesh2, wireframe2);
-			
-			let geometry3 = new THREE.BoxGeometry( 200, 200, 200 );
-			let mesh3 = new THREE.Mesh( geometry3, basicMaterial );
-			let smoothMesh3 = new THREE.Mesh( undefined, smoothMaterial );
-			let wireframe3 = new THREE.Mesh( undefined, wireframeMaterial );
-			mesh3.position.x = 400;
-			smoothMesh3.position.x = 400;
-			wireframe3.position.x = 400;
-			subdivide(geometry3, 3, smoothMesh3, wireframe3);
-			scene.add(mesh3, smoothMesh3, wireframe3);
+			setUpGeometry(-800, 200, 200, 200, 0);
+			setUpGeometry(-400, 200, 200, 200, 1);
+			setUpGeometry(0, 200, 200, 200, 2);
+			setUpGeometry(400, 200, 200, 200, 3);
 			
 			// render setup
 			renderer = new THREE.WebGLRenderer( { antialias: true } );
