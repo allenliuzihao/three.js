@@ -20,7 +20,6 @@ var files = [
 
 	{ path: 'controls/DragControls.js', dependencies: [], ignoreList: [] },
 	{ path: 'controls/DeviceOrientationControls.js', dependencies: [], ignoreList: [] },
-	{ path: 'controls/EditorControls.js', dependencies: [], ignoreList: [] },
 	{ path: 'controls/FirstPersonControls.js', dependencies: [], ignoreList: [] },
 	{ path: 'controls/FlyControls.js', dependencies: [], ignoreList: [] },
 	{ path: 'controls/OrbitControls.js', dependencies: [], ignoreList: [] },
@@ -78,7 +77,6 @@ var files = [
 	{ path: 'loaders/AWDLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/AssimpJSONLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/AssimpLoader.js', dependencies: [], ignoreList: [] },
-	{ path: 'loaders/BabylonLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/BasisTextureLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/BVHLoader.js', dependencies: [], ignoreList: [ 'Bones' ] },
 	{ path: 'loaders/ColladaLoader.js', dependencies: [ { name: 'TGALoader', path: 'loaders/TGALoader.js' } ], ignoreList: [] },
@@ -101,7 +99,6 @@ var files = [
 	{ path: 'loaders/OBJLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/PCDLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/PDBLoader.js', dependencies: [], ignoreList: [] },
-	{ path: 'loaders/PlayCanvasLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/PLYLoader.js', dependencies: [], ignoreList: [ 'Mesh' ] },
 	{ path: 'loaders/PRWMLoader.js', dependencies: [], ignoreList: [] },
 	{ path: 'loaders/PVRLoader.js', dependencies: [], ignoreList: [] },
