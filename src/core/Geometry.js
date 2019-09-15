@@ -18,6 +18,7 @@ import { _Math } from '../math/Math.js';
  * @author mikael emtinger / http://gomo.se/
  * @author zz85 / http://www.lab4games.net/zz85/blog
  * @author bhouston / http://clara.io
+ * @author Zihao Liu / toTriangleMesh and toQuadMesh
  */
 
 var _geometryId = 0; // Geometry uses even numbers as Id

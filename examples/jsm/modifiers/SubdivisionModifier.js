@@ -1,7 +1,7 @@
 /**
+ *  @author Zihao Liu / catmull-clark subdivision and texture mapping onto the surface
  *	@author zz85 / http://twitter.com/blurspline / http://www.lab4games.net/zz85/blog
  *	@author centerionware / http://www.centerionware.com
- *  @author Zihao Liu / catmull-clark subdivision and texture mapping onto the surface
  *
  *	Subdivision Geometry Modifier
  *		using Catmull-Clark and Loop Subdivision Scheme
@@ -16,7 +16,7 @@
  *			http://www.cs.rutgers.edu/~decarlo/readings/subdiv-sg00c.pdf
  *
  *	Known Issues:
- *		- currently doesn't handle "Sharp Edges"
+ *		- currently doesn't handle "Sharp Edges" for Loop scheme
  */
 
 import { Face3 } from '../../../src/core/Face3.js';
