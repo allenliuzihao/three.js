@@ -40,7 +40,8 @@
 			// texture path
 			//let path = "textures/compressed/hepatica_dxt3_mip.dds";
 			//let path = "textures/compressed/disturb_argb_mip.dds";
-			let path = "textures/crate.gif";
+			let path = "textures/compressed/explosion_dxt5_mip.dds";
+			//let path = "textures/crate.gif";
 
 			// variables
 			let camera, scene, renderer, loader;
@@ -54,13 +55,14 @@
 			scene.background = new THREE.Color( 0xc9c2bd );
 
 			// texture setup
-			//loader = new DDSLoader();
-			loader = new THREE.TextureLoader();
+			loader = new DDSLoader();
+			//loader = new THREE.TextureLoader();
 			let texture = loader.load(path);
+			texture.anisotropy = 4;
 
 			// materials
 			let basicMaterial = new THREE.MeshBasicMaterial( { color: 0x616660, wireframe: true } );
-			let smoothMaterial = new THREE.MeshBasicMaterial( { map: texture } );
+			let smoothMaterial = new THREE.MeshBasicMaterial( { map: texture, side: THREE.DoubleSide,  depthTest: true, transparent: true  } );
 
 			// shading color: 0x269153, 0x48585C, 0xA52A2A
 			//let smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
@@ -78,10 +80,11 @@
 				
 				if(subdivisions === 0){
 					smoothMesh.geometry = mesh.geometry;
-					scene.add(smoothMesh);
+					wireframe.geometry = smoothMesh.geometry;
+					scene.add(mesh, smoothMesh, wireframe);
 				} else {
 					subdivide(geometry, subdivisions, smoothMesh, wireframe);
-					scene.add(mesh, smoothMesh, wireframe);
+					scene.add(smoothMesh, wireframe);
 				}
 			}
 
