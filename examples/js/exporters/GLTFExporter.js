@@ -78,6 +78,7 @@ THREE.GLTFExporter.prototype = {
 			onlyVisible: true,
 			truncateDrawRange: true,
 			embedImages: true,
+			maxTextureSize: Infinity,
 			animations: [],
 			forceIndices: false,
 			forcePowerOfTwoTextures: false,
@@ -751,10 +752,10 @@ THREE.GLTFExporter.prototype = {
 
 				var canvas = cachedCanvas = cachedCanvas || document.createElement( 'canvas' );
 
-				canvas.width = image.width;
-				canvas.height = image.height;
+				canvas.width = Math.min( image.width, options.maxTextureSize );
+				canvas.height = Math.min( image.height, options.maxTextureSize );
 
-				if ( options.forcePowerOfTwoTextures && ! isPowerOfTwo( image ) ) {
+				if ( options.forcePowerOfTwoTextures && ! isPowerOfTwo( canvas ) ) {
 
 					console.warn( 'GLTFExporter: Resized non-power-of-two image.', image );
 
@@ -1214,7 +1215,7 @@ THREE.GLTFExporter.prototype = {
 
 				console.warn( 'THREE.GLTFExporter: Creating normalized normal attribute from the non-normalized one.' );
 
-				geometry.addAttribute( 'normal', createNormalizedNormalAttribute( originalNormal ) );
+				geometry.setAttribute( 'normal', createNormalizedNormalAttribute( originalNormal ) );
 
 			}
 
@@ -1268,7 +1269,7 @@ THREE.GLTFExporter.prototype = {
 
 			}
 
-			if ( originalNormal !== undefined ) geometry.addAttribute( 'normal', originalNormal );
+			if ( originalNormal !== undefined ) geometry.setAttribute( 'normal', originalNormal );
 
 			// Skip if no exportable attributes found
 			if ( Object.keys( attributes ).length === 0 ) {

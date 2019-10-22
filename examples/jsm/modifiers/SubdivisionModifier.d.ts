@@ -1,6 +1,6 @@
 import {
-  BufferGeometry,
-  Geometry
+	BufferGeometry,
+	Geometry
 } from '../../../src/Three';
 
 export class SubdivisionModifier {
@@ -10,4 +10,5 @@ export class SubdivisionModifier {
 
   modify(geometry: BufferGeometry | Geometry): Geometry;
   smooth(geometry: Geometry): void;
+
 }
