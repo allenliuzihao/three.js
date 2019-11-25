@@ -1,4 +1,4 @@
-// r109
+// r110
 
 const assets = [
 	'./',
@@ -38,7 +38,6 @@ const assets = [
 
 	'../examples/js/renderers/Projector.js',
 	'../examples/js/renderers/RaytracingRenderer.js',
-	'../examples/js/renderers/SoftwareRenderer.js',
 	'../examples/js/renderers/SVGRenderer.js',
 
 	'./manifest.json',

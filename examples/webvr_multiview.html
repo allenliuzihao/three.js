@@ -16,6 +16,8 @@
 				color: #48f;
 			}
 		</style>
+		<!-- WebXR Device API (For Chrome M76+), expires 12/04/2019 -->
+		<meta http-equiv="origin-trial" content="Aq9LklhCLNUveuCr7QTpGpqwCPG817cYHdVyQuJPOZYk47iRB390lUKa5edVmgS1pZSl8HPspElEC/91Fz55dwIAAABTeyJvcmlnaW4iOiJodHRwczovL3RocmVlanMub3JnOjQ0MyIsImZlYXR1cmUiOiJXZWJYUkRldmljZU03NiIsImV4cGlyeSI6MTU3NTQxNzU5OX0=">
 	</head>
 	<body>
 		<script type="module">
@@ -56,7 +58,7 @@
 				// as soon as that will get solved we will update the code so it will be
 				// transparent for the user and you could use this extension with or without multisampled
 				// contexts
-				var context = canvas.getContext( 'webgl2', { antialias: false } );
+				var context = canvas.getContext( 'webgl2', { antialias: false, xrCompatible: true } );
 
 				renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context } );
 
@@ -80,6 +82,7 @@
 				scene.background = new THREE.Color( 0x505050 );
 
 				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10 );
+				camera.position.set( 0, 1.6, 0 );
 
 				room = new THREE.LineSegments(
 					new BoxLineGeometry( 6, 6, 6, 10, 10, 10 ),
