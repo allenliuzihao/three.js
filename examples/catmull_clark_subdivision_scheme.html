@@ -40,8 +40,8 @@
 			// texture path
 			//let path = "textures/compressed/hepatica_dxt3_mip.dds";
 			//let path = "textures/compressed/disturb_argb_mip.dds";
-			let path = "textures/compressed/explosion_dxt5_mip.dds";
-			//let path = "textures/crate.gif";
+			//let path = "textures/compressed/Mountains.dds";
+			let path = "textures/colors.png";
 
 			// variables
 			let camera, scene, renderer, loader;
@@ -55,8 +55,8 @@
 			scene.background = new THREE.Color( 0xc9c2bd );
 
 			// texture setup
-			loader = new DDSLoader();
-			//loader = new THREE.TextureLoader();
+			//loader = new DDSLoader();
+			loader = new THREE.TextureLoader();
 			let texture = loader.load(path);
 			texture.anisotropy = 4;
 
@@ -65,7 +65,7 @@
 			let smoothMaterial = new THREE.MeshBasicMaterial( { map: texture, side: THREE.DoubleSide, depthTest: true, transparent: true  } );
 
 			// shading color: 0x269153, 0x48585C, 0xA52A2A
-			//let smoothMaterial = new THREE.MeshPhongMaterial( { color: 0xA52A2A, flatShading: true, vertexColors: THREE.VertexColors } );
+			//let smoothMaterial = new THREE.MeshPhongMaterial( { color: 0x269153, flatShading: false, vertexColors: THREE.VertexColors } );
 			let wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, opacity: 0.15, transparent: true } );
 
 			function setUpGeometry(x, w, h, d, subdivisions){
@@ -111,6 +111,7 @@
 			setUpGeometry(-400, 200, 200, 200, 1);
 			setUpGeometry(0, 200, 200, 200, 2);
 			setUpGeometry(400, 200, 200, 200, 3);
+			setUpGeometry(800, 200, 200, 200, 5);
 			
 			// render setup
 			renderer = new THREE.WebGLRenderer( { antialias: true } );
