@@ -2,6 +2,10 @@
 	color-scheme: light dark;
 }
 
+html {
+	touch-action: none;
+}
+
 body {
 	font-family: Helvetica, Arial, sans-serif;
 	font-size: 14px;
@@ -451,6 +455,7 @@ select {
 	font-size: 12px;
 	cursor: default;
 	overflow: auto;
+	resize: vertical;
 	outline: none !important;
 }
 
@@ -659,6 +664,14 @@ select {
 	.Listbox {
 		color: #888;
 		background: #222;
+	}
+
+	.Listbox .ListboxItem:hover {
+		background-color: rgba(21,60,94,0.5);
+	}
+
+	.Listbox .ListboxItem.active {
+		background-color: rgba(21,60,94,1);
 	}
 
 }

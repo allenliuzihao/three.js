@@ -5,26 +5,25 @@ import { EventDispatcher } from './EventDispatcher.js';
 import { Euler } from '../math/Euler.js';
 import { Layers } from './Layers.js';
 import { Matrix3 } from '../math/Matrix3.js';
-import { _Math } from '../math/Math.js';
-import { TrianglesDrawMode } from '../constants.js';
+import { MathUtils } from '../math/MathUtils.js';
 
-var _object3DId = 0;
+let _object3DId = 0;
 
-var _v1 = new Vector3();
-var _q1 = new Quaternion();
-var _m1 = new Matrix4();
-var _target = new Vector3();
+const _v1 = new Vector3();
+const _q1 = new Quaternion();
+const _m1 = new Matrix4();
+const _target = new Vector3();
 
-var _position = new Vector3();
-var _scale = new Vector3();
-var _quaternion = new Quaternion();
+const _position = new Vector3();
+const _scale = new Vector3();
+const _quaternion = new Quaternion();
 
-var _xAxis = new Vector3( 1, 0, 0 );
-var _yAxis = new Vector3( 0, 1, 0 );
-var _zAxis = new Vector3( 0, 0, 1 );
+const _xAxis = new Vector3( 1, 0, 0 );
+const _yAxis = new Vector3( 0, 1, 0 );
+const _zAxis = new Vector3( 0, 0, 1 );
 
-var _addedEvent = { type: 'added' };
-var _removedEvent = { type: 'removed' };
+const _addedEvent = { type: 'added' };
+const _removedEvent = { type: 'removed' };
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -38,7 +37,7 @@ function Object3D() {
 
 	Object.defineProperty( this, 'id', { value: _object3DId ++ } );
 
-	this.uuid = _Math.generateUUID();
+	this.uuid = MathUtils.generateUUID();
 
 	this.name = '';
 	this.type = 'Object3D';
@@ -128,7 +127,7 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	onBeforeRender: function () {},
 	onAfterRender: function () {},
 
-	applyMatrix: function ( matrix ) {
+	applyMatrix4: function ( matrix ) {
 
 		if ( this.matrixAutoUpdate ) this.updateMatrix();
 
@@ -395,7 +394,7 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		}
 
-		object.applyMatrix( _m1 );
+		object.applyMatrix4( _m1 );
 
 		object.updateWorldMatrix( false, false );
 
@@ -681,8 +680,6 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		// object specific properties
 
-		if ( this.isMesh && this.drawMode !== TrianglesDrawMode ) object.drawMode = this.drawMode;
-
 		if ( this.isInstancedMesh ) {
 
 			object.type = 'InstancedMesh';
@@ -804,6 +801,7 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 				values.push( data );
 
 			}
+
 			return values;
 
 		}

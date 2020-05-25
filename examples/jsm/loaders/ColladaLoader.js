@@ -21,7 +21,7 @@ import {
 	LineSegments,
 	Loader,
 	LoaderUtils,
-	Math as _Math,
+	MathUtils,
 	Matrix4,
 	Mesh,
 	MeshBasicMaterial,
@@ -257,6 +257,8 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 				channels: {}
 			};
 
+			var hasChildren = false;
+
 			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
 				var child = xml.childNodes[ i ];
@@ -282,6 +284,12 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 						data.channels[ id ] = parseAnimationChannel( child );
 						break;
 
+					case 'animation':
+						// hierarchy of related animations
+						parseAnimation( child );
+						hasChildren = true;
+						break;
+
 					default:
 						console.log( child );
 
@@ -289,7 +297,13 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 			}
 
-			library.animations[ xml.getAttribute( 'id' ) ] = data;
+			if ( hasChildren === false ) {
+
+				// since 'id' attributes can be optional, it's necessary to generate a UUID for unqiue assignment
+
+				library.animations[ xml.getAttribute( 'id' ) || MathUtils.generateUUID() ] = data;
+
+			}
 
 		}
 
@@ -2096,6 +2110,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 							data.stride = parseInt( accessor.getAttribute( 'stride' ) );
 
 						}
+
 						break;
 
 				}
@@ -2368,6 +2383,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 											}
 
 										}
+
 										break;
 
 									case 'NORMAL':
@@ -2396,6 +2412,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 								}
 
 							}
+
 							break;
 
 						case 'NORMAL':
@@ -2768,7 +2785,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 				case 'rotate':
 					data.obj = new Vector3();
 					data.obj.fromArray( array );
-					data.angle = _Math.degToRad( array[ 3 ] );
+					data.angle = MathUtils.degToRad( array[ 3 ] );
 					break;
 
 			}
@@ -2947,7 +2964,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 				if ( targetElement ) {
 
-					// get the parent of the transfrom element
+					// get the parent of the transform element
 
 					var parentVisualElement = targetElement.parentElement;
 
@@ -3040,7 +3057,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 									switch ( joint.type ) {
 
 										case 'revolute':
-											matrix.multiply( m0.makeRotationAxis( axis, _Math.degToRad( value ) ) );
+											matrix.multiply( m0.makeRotationAxis( axis, MathUtils.degToRad( value ) ) );
 											break;
 
 										case 'prismatic':
@@ -3136,7 +3153,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 					case 'rotate':
 						var array = parseFloats( child.textContent );
 						var vector = new Vector3().fromArray( array );
-						var angle = _Math.degToRad( array[ 3 ] );
+						var angle = MathUtils.degToRad( array[ 3 ] );
 						transforms.push( {
 							sid: child.getAttribute( 'sid' ),
 							type: child.nodeName,
@@ -3243,7 +3260,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 					case 'rotate':
 						var array = parseFloats( child.textContent );
-						var angle = _Math.degToRad( array[ 3 ] );
+						var angle = MathUtils.degToRad( array[ 3 ] );
 						data.matrix.multiply( matrix.makeRotationAxis( vector.fromArray( array ), angle ) );
 						data.transforms[ child.getAttribute( 'sid' ) ] = child.nodeName;
 						break;
@@ -3595,12 +3612,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 			}
 
-			if ( object.name === '' ) {
-
-				object.name = ( type === 'JOINT' ) ? data.sid : data.name;
-
-			}
-
+			object.name = ( type === 'JOINT' ) ? data.sid : data.name;
 			object.matrix.copy( matrix );
 			object.matrix.decompose( object.position, object.quaternion, object.scale );
 
@@ -3704,6 +3716,7 @@ ColladaLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 							object = new Mesh( geometry.data, material );
 
 						}
+
 						break;
 
 				}
